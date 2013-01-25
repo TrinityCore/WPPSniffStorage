@@ -1,8 +1,5 @@
-			</div>
-            <div class="clear">&nbsp;</div>
-		</div>
-		<div id="footer">
-        </div>            
-	</div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
