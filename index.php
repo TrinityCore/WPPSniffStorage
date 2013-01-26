@@ -33,6 +33,7 @@ if ($result = $mysqlCon->query("SELECT DISTINCT(Build) as b FROM SniffData")) {
 $searchQuantity = isset($_POST['searches']) ? $_POST['searches'] : 1;
 ?>
 <form name="search" method="post">
+  <table><tr><td>
     <fieldset>
         <legend>Sniff Search</legend>
         <input type="hidden" name="searches" value="<?php echo $searchQuantity; ?>" id="searches" />
@@ -41,15 +42,13 @@ $searchQuantity = isset($_POST['searches']) ? $_POST['searches'] : 1;
                 <a id="addSearch">Add New Search</a> | <a id="removeSearch">Remove Last Search</a>
             </p>
             <?php
-            for ($l = 0; $l < $searchQuantity; $l++)
-            {
+            for ($l = 0; $l < $searchQuantity; $l++) {
             ?>
             <div id="entries<?php echo $l; ?>" style="clear:left;">
-                <label for="entryType<?php echo $l; ?>">Entry Type: </label>
+                <label>Entry Type: </label>
                 <select name="entryType<?php echo $l; ?>" onchange="filterSelect(this)">
                 <?php
-                    for ($i = 0, $m = count($types); $i < $m; ++$i)
-                    {
+                    for ($i = 0, $m = count($types); $i < $m; ++$i) {
                         echo "<option value=\"" . $types[$i] . "\"";
                         if (isset($_POST['entryType'.$l]) && $_POST['entryType' . $l] == $types[$i])
                             echo ' selected';
@@ -68,12 +67,14 @@ $searchQuantity = isset($_POST['searches']) ? $_POST['searches'] : 1;
             }
             ?>
         </div>
-        <fieldset class="innerfieldset">
-            <legend>Client Version</legend>
-            <ul class="buildList" name="buildList"><?php echo $builds; ?></ul>
-        </fieldset>
         <input type="submit" name="submit" class="submit" value="Submit" />
     </fieldset>
+  </td><td>
+    <fieldset class="clientBuildSelector">
+        <legend>Client Version</legend>
+        <ul class="buildList" name="buildList"><?php echo $builds; ?></ul>
+    </fieldset>
+  </td></tr></table>
 </form>
 
 <?php
@@ -86,7 +87,7 @@ if (isset($_POST['submit'])) {
     for ($i = 0; $i < $_POST['searches'];$i++) {
         $type = $_POST['entryType'.$i];
         $value = $_POST['entry'.$i];
-        if (empty($value) || $type == 'None')
+        if (/*empty($value) || */$type == 'None')
             continue;
         if ($type == 'Opcode Number')
             $type = 'Opcode';
@@ -113,7 +114,9 @@ if (isset($_POST['submit'])) {
         if ($type == 'Opcode Name' || $type == 'Opcode Number') $type = 'Opcode';
         for ($i = 0; $i < count($value);$i++)
         {
-            $valValue = $value[$i];
+            $valValue = &$value[$i];
+            if (empty($valValue))
+                continue;
             if ($key == 'Opcode Name') {
                 if ($where) $where .= ' OR ';
                 if ($valValue['Like']) $where .= "data LIKE '".$mysqlCon->escape_string($valValue['opcode'])."'";
@@ -127,8 +130,10 @@ if (isset($_POST['submit'])) {
                     $where .= " b.name LIKE '%".$mysqlCon->escape_string($valValue)."%'";
             }
         }
-        $where = "a.ObjectType = '".$type."' AND (".$where.")";
-        array_push($wherearr, $where);
+        $whereStr = "a.ObjectType='" . $type . "'";
+        if ($where != "")
+            $whereStr .= " AND (".$where.")";
+        array_push($wherearr, $whereStr);
     }
 
     if (!empty($wherearr)) {
@@ -144,7 +149,7 @@ if (isset($_POST['submit'])) {
 
         if ($result = $mysqlCon->query($sql)) {
             if ($result->num_rows) {
-                echo '<table id="resultSet"><tr><th style="width:90px">Build</th><th style="width:183px">Sniff Name</th><th>Opcode Name</th><th style="width:70px">Opcode ID</th><th>Name</th></tr>';
+                echo '<table id="resultSet"><tr><th style="width:90px">Build</th><th style="width:183px">Sniff Name</th><th>Data Name</th><th style="width:70px">Value</th><th>Name</th></tr>';
                 while ($row = $result->fetch_array(MYSQLI_ASSOC)) {
                     echo '<tr><td>' . $buildVersions[$row["Build"]] . '</td>';
                     echo '<td>' . (strlen($row["SniffName"]) > 25 ? substr($row["SniffName"], 0, 20) . "..." : $row["SniffName"]) . '</td>';
@@ -192,19 +197,40 @@ $(function() {
             'clear': 'both',
             'margin-bottom': '4px'
         });
-        $(entriesDiv).append($(document.createElement('p')).css('clear','both').append($(document.createElement('input')).attr('type','checkbox').attr('name','andor'+entriesCount)).append(' Previous search OR new search (Defaults as AND)'));
-        $(entriesDiv).append($(document.createElement('label')).attr('for','entryType'+entriesCount).text('Entry Type: '));
-        var entriesSel = $(document.createElement('select')).attr('name','entryType'+entriesCount);
+        $(entriesDiv).append($(document.createElement('p')).css('clear','both').append($(document.createElement('input')).attr({
+            'type': 'checkbox',
+            'name': 'andor' + entriesCount}
+        )).append(' Previous search OR new search (Defaults as AND)'));
+        $(entriesDiv).append($(document.createElement('label')).attr('for','entryType' + entriesCount).text('Entry Type: '));
+        var entriesSel = $(document.createElement('select')).attr('name','entryType' + entriesCount);
+        
         for (type in types)
             $(entriesSel).append($(document.createElement('option')).val(types[type]).text(types[type]));
+
         $(entriesDiv).append($(entriesSel));
-        $(entriesDiv).append($(document.createElement('label')).attr('for','entry'+entriesCount).text('Entry: '));
-        $(entriesDiv).append($(document.createElement('input')).attr('type','text').attr('name','entry'+entriesCount).addClass('searchInput'));
-        $(entriesDiv).append($(document.createElement('p')).css('display','none').css('clear','both').attr('id','likesentries'+entriesCount).append($(document.createElement('input')).attr('type','checkbox').attr('name','likes'+entriesCount).val(1)).append(' Use like instead of equals for opcode name.'));
-        $(entriesDiv).append($(document.createElement('input')).attr('type','hidden').attr('name','existingEntries').val(entriesCount));
+        $(entriesDiv).append($(document.createElement('label')).attr('for','entry' + entriesCount).text('Entry: '));
+
+        $(entriesDiv).append($(document.createElement('input')).attr({
+            'type': 'text',
+            'name': 'entry'+entriesCount
+        }).addClass('searchInput'));
+
+        $(entriesDiv).append($(document.createElement('p')).css({
+            'display': 'none',
+            'clear': 'both'
+        }).attr('id','likesentries' + entriesCount).append($(document.createElement('input')).attr({
+            'type': 'checkbox',
+            'name': 'likes' + entriesCount
+        }).val(1)).append(' Use like instead of equals for opcode name.'));
+
+        $(entriesDiv).append($(document.createElement('input')).attr({
+            'type': 'hidden',
+            'name': 'existingEntries'
+        }).val(entriesCount));
+
         $('#searches').val(entriesCount + 1);
         $('#entryContainer').append(entriesDiv);
-        $('#entries'+entriesCount+' select').change(function(i) { filterSelect(this); });
+        $('#entries' + entriesCount+' select').change(function(i) { filterSelect(this); });
     });
 });
 </script>
