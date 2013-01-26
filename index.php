@@ -21,10 +21,10 @@ if (!isset($pagenum))
     $pagenum = 1;
 
 $builds = "";
-if ($result = $mysqlCon->query("SELECT DISTINCT(Build) as b FROM SniffData")) {
+if ($result = $mysqlCon->query("SELECT DISTINCT(Build) AS b FROM SniffData")) {
     while ($row = $result->fetch_object()) {
-        $builds .= '<li><input type="checkbox" name="builds" value="' . $row->b . '"';
-        if (isset($_POST['builds']) && in_array($row->b, explode(",", $_POST["builds"])))
+        $builds .= '<li><input type="checkbox" name="builds[]" value="' . $row->b . '"';
+        if (isset($_POST['builds']) && in_array($row->b, $_POST["builds"]))
             $builds .= ' checked';
         $builds .= '> &nbsp; ' . $buildVersions[$row->b] . '</li>';
     }
@@ -79,8 +79,8 @@ $searchQuantity = isset($_POST['searches']) ? $_POST['searches'] : 1;
 
 <?php
 if (isset($_POST['submit'])) {
-    $sql = "SELECT Build, SniffName, ObjectType, Id, Data, name from (";
-    $tmpsql = "SELECT a.Build,a.SniffName,a.ObjectType,a.Id,a.Data,b.name as name FROM SniffData as a LEFT OUTER JOIN objectnames as b on a.id = b.id and a.objecttype = b.objecttype";
+    $sql = "SELECT Build, SniffName, ObjectType, Id, Data, name FROM (";
+    $tmpsql = "SELECT a.Build,a.SniffName,a.ObjectType,a.Id,a.Data,b.name AS name FROM SniffData AS a LEFT OUTER JOIN objectnames AS b on a.Id = b.Id AND a.ObjectType = b.ObjectType";
     $wherearr = array();
     $likes = isset($_POST['likes']) ? $_POST['likes'] : array();
     $wheres = array();
@@ -108,19 +108,21 @@ if (isset($_POST['submit'])) {
         }
     }
     // Build all the WHERE conditions
-    foreach ($wheres as $key => $value) {
+    foreach ($wheres AS $key => $value) {
         $where = '';
         $type = $key;
         if ($type == 'Opcode Name' || $type == 'Opcode Number') $type = 'Opcode';
-        for ($i = 0; $i < count($value);$i++)
-        {
+        for ($i = 0; $i < count($value);$i++) {
             $valValue = &$value[$i];
             if (empty($valValue))
                 continue;
             if ($key == 'Opcode Name') {
-                if ($where) $where .= ' OR ';
-                if ($valValue['Like']) $where .= "data LIKE '".$mysqlCon->escape_string($valValue['opcode'])."'";
-                else $where .= "data = '".$valValue['opcode']."'";
+                if ($where)
+                    $where .= ' OR ';
+                if ($valValue['Like'])
+                    $where .= "data LIKE '".$mysqlCon->escape_string($valValue['opcode'])."'";
+                else
+                    $where .= "data = '".$valValue['opcode']."'";
             } else {
                 if ($where)
                     $where .= ' OR ';
@@ -132,7 +134,7 @@ if (isset($_POST['submit'])) {
         }
         $whereStr = "a.ObjectType='" . $type . "'";
         if ($where != "")
-            $whereStr .= " AND (".$where.")";
+            $whereStr .= " AND (".trim($where).")";
         array_push($wherearr, $whereStr);
     }
 
@@ -143,9 +145,9 @@ if (isset($_POST['submit'])) {
                 $sql.=' UNION ALL ';
             $sql .= $tmpsql." WHERE ".$wherearr[$i];
             if (isset($_POST['builds']))
-                $where .= ' AND build in ('.$_POST['builds'].')';
+                $sql .= ' AND Build IN ('.implode(",", $_POST['builds']).')';
         }
-        $sql .= ') as SniffsData GROUP BY SniffName, Id, Data, ObjectType ORDER BY SniffName, ObjectType ASC';
+        $sql .= ') AS SniffsData GROUP BY SniffName, Id, Data, ObjectType ORDER BY SniffName, ObjectType ASC';
 
         if ($result = $mysqlCon->query($sql)) {
             if ($result->num_rows) {
@@ -203,7 +205,7 @@ $(function() {
         )).append(' Previous search OR new search (Defaults as AND)'));
         $(entriesDiv).append($(document.createElement('label')).attr('for','entryType' + entriesCount).text('Entry Type: '));
         var entriesSel = $(document.createElement('select')).attr('name','entryType' + entriesCount);
-        
+
         for (type in types)
             $(entriesSel).append($(document.createElement('option')).val(types[type]).text(types[type]));
 
