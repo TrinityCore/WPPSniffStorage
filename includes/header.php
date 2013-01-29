@@ -1,35 +1,19 @@
 <?php
-$config        = parse_ini_file("config.ini.php");
+session_start();
+if (basename($_SERVER["SCRIPT_NAME"]) !== "login.php")
+    if (!isset($_SESSION['uid']) || empty($_SESSION['uid'])) // We don't bother with it, just a marker
+        header("Location: http://" . $_SERVER['HTTP_HOST'] . rtrim(dirname($_SERVER['PHP_SELF']), '/\\') . "/login.php");
+
+$config        = parse_ini_file("./includes/config.ini.php");
 $mysqlCon      = new mysqli($config['DBhost'], $config['DBuser'], $config['DBpass'], $config['DBname']);
 $types         = array('None', 'Spell', 'Map', 'LFGDungeon', 'Battleground', 'Unit', 'GameObject', 'Item', 'Quest', 'PageText', 'NpcText', 'Gossip', 'Zone', 'Area', 'Phase', 'Player', 'Opcode Name', 'Opcode Number');
 
-function BuildSearchList($result, $nobuild)
-{
-    if ($nobuild) $display = " style='display:none'";
-    $html = '<table id="searchresults" cellspacing="0"><tr class="headerrow"><td class="first">Sniff Name</td><td'.$display.'>Build</td><td>Type</td><td>Id</td><td>Name</td></tr>';
-    $otherrow = false;
-    while ($row = $result->fetch_array(MYSQLI_ASSOC))
-    {
-
-        $html .= '<tr';
-        if ($otherrow) $html .= ' class="otherrow"';
-        $html .= '><td class="first"><a href="'.$row['SniffName'].'" target="blank">'.$row['SniffName'].'</a></td><td'.$display.'>'.$row['Build'].'</td><td style="text-align:center;">'.$row['ObjectType'].'</td><td>'.$row['Id'].'</td><td>';
-        if ($row['ObjectType'] == 'Opcode')
-            $html .= $row['Data'];
-        else
-            $html .= $row['name'];
-        $html .= '</td></tr>';
-        $otherrow = !$otherrow;
-    }
-    $html .= '</table>';
-    return $html;
-}
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <link rel="stylesheet" type="text/css" href="./includes/style.css" />
+    <link rel="stylesheet" type="text/css" href="./includes/style.php?a=<?php echo intval($config["allowPkt"]) + 2; ?>" />
     <title>WPP Sniff Data Storage</title>
 </head>
 
@@ -42,8 +26,11 @@ function BuildSearchList($result, $nobuild)
                 <h4>TrinityCore Sniff Storage</h4>
                 <div class="topLinks">
                     <ul>
-                        <li><a href="./index.php">Home</a></li>
+                        <?php if (!empty($_SESSION['uid'])) { ?>
+                        <li><a href="./logout.php">Quit</a></li>
+                        <?php } ?>
                         <li><a href="./upload.php">Upload</a></li>
+                        <li><a href="./index.php">Search</a></li>
                     </ul>
                 </div>
             </div>

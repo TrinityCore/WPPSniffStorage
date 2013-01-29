@@ -16,65 +16,136 @@ $buildVersions = array(5875 => "1.12.1 5875",
 
 require_once('includes/header.php');
 ?>
-<form name="search" method="post" enctype="multipart/form-data">
-    <fieldset>
-        <legend>Sniff Data Upload</legend>
+<form method="post" enctype="multipart/form-data">
+    <input type="hidden" name="MAX_FILE_SIZE" value="10485760" />
+    <div id="uploadTypeSelector">
+        <a class="typeSelector">Paste a SQL blob</a><a class="typeSelector">Upload a SQL blob</a><?php if ($config['allowPkt'] !== "0") { /* DON'T ASK */ ?><a class="typeSelector">Upload a .pkt</a><?php } ?>
+    </div>
+
+    <div class="uploadFormHolder hidden">
         <textarea name="sniffData" style="width: 100%; height: 150px"></textarea>
-        <br /><br />
-        If the sniff data dump is quite heavy, upload the .SQL file here. (Up to <b>10Mbs</b>)<br />
-        <input type="hidden" name="MAX_FILE_SIZE" value="10485760" />
-        <input type="file" name="fileData" />
-        <br />
-        <!--Overwrite build in SQL: <input type="radio" name="overwriteBuild" value="1" /> Yes <input type="radio" name="overwriteBuild" value="0" checked /> No<br />
-        <div id="buildEnforcer" style="display: none"><?php
+        <input type="submit" name="submit" value="Submit" />
+    </div>
+    <div class="uploadFormHolder hidden">
+        <input type="file" name="sqlData" />
+        <input type="submit" name="submit" value="Submit" />
+    </div>
+    <?php if ($config['allowPkt'] !== "0") { /* DON'T ASK */ ?>
+    <div class="uploadFormHolder hidden">
+        <input type="file" name="pktData" /><br />
+        Content description: <input type="text" name="pktContent" size="45" /><br />
+        Do *NOT* put any exceedingly large description, it will be actually used to name the file.<br />
+        Overwrite build: <input type="radio" name="overwriteBuild" value="1" /> Yes <input type="radio" name="overwriteBuild" value="0" checked /> No
+        <select style="display: none" name="enforceBuildId"><?php
             foreach ($buildVersions as $val => &$build)
-                echo "<input type=\"radio\" name=\"enforcedBuildId\" value=\"{$val}\"> {$build} <br />";
-        ?></div>-->
-        <input type="submit" name="submit" class="submit" value="Submit" />
-    </fieldset>
+                echo "<option value=\"{$val}\">{$build}</option>";
+        ?></select>
+        <input type="submit" name="submit" value="Submit" />
+    </div>
+    <?php } ?>
+    <input type="hidden" name="uploadType" value="-1" />
 </form>
-
 <?php
-if (isset($_POST['submit'])) {
+if (isset($_POST['submit']) && $_POST['uploadType'] != -1) {
     $errors = array();
-    if (!empty($_POST['sniffData']))
-        injectSQL($_POST['sniffData']);
-    else if (!empty($_FILES["fileData"])) {
-        $data = &$_FILES['fileData'];
-        $allowedFile = false;
-
-        $pathInfo = pathinfo($data['name']);
-        if ($data['type'] === "application/octet-stream") // SQL files have that type, so we should extract extention from the pathinfo
-            if ($pathInfo['extension'] === "sql")
-                if ($data['size'] < 10 * 1024 * 1024)
-                    if (!$data['error'])
-                        $allowedFile = true;
-        unset($pathInfo);
-
-        if (!$allowedFile) {
-            switch ($data['error']) {
-                case 1: // UPLOAD_ERR_INI_SIZE
-                case 2: // UPLOAD_ERR_FORM_SIZE
-                    $errors[] = "The SQL dump's size exceeds the limit.";
-                    break;
-                case 3: // UPLOAD_ERR_PARTIAL
-                    $errors[] = "The SQL dump has only been partially transferred.";
-                    break;
-                case 4: // UPLOAD_ERR_NO_FILE:
-                    // $errors[] = "No file has been uploaded."; // Debug only
-                    break;
+    switch ($_POST['uploadType']) {
+        case 0: // SQL blob injection
+            if (!empty($_POST['sniffData']))
+                injectSQL($_POST['sniffData']);
+            break;
+        case 1: // SQL blob upload
+            if (!empty($_FILES["sqlData"]) || !empty($_FILES['pktData'])) {
+                $data = &$_FILES['sqlData'];
+                if (isValidFile($data))
+                    injectSQL(file_get_contents($data['tmp_name']));
             }
-        }
-        else
-            injectSQL(file_get_contents($data['tmp_name']));
+            break;
+        case 2: // Pkt upload - *NOT* totally done, leave it disabled until time X (Misses build enforcing)
+            if ($config['allowPkt'] == "0") // Because PHP is an idiot
+                break; // Disabled by config
+            $description = str_replace(" ", "_", $_POST['pktContent']);
+            if (isValidFile($data))
+                move_uploaded_file($data['tmp_name'], $config["pktStoragePath"] . $description . ".pkt");
+            break;
+        default:
+            $errors[] = "Invalid submitted action.";
+            break;
     }
     
     if (!empty($errors)) {
-        echo "<ul>";
+        echo "<h4>Errors list</h4><ul>";
         foreach ($errors as &$error)
             echo "<li>" . $error. "</li>";
         echo "</ul>";
     }
+}
+?>
+<script src="./includes/jquery.js"></script>
+<script type="text/javascript">
+$(function() {
+    $("input[name='overwriteBuild']").click(function() {
+        $("select[name='enforceBuildId']").css("display", $(this).val() == 1 ? "inline-block" : "none");
+    });
+
+    $("#uploadTypeSelector a").click(function() {
+        $("#uploadTypeSelector a").removeClass("activeSelector");
+        $(this).addClass("activeSelector");
+        var itemIdx = $(this).index();
+        $("div.uploadFormHolder").each(function(index, item) {
+            var isHidden = $(item).hasClass("hidden");
+            if (index != itemIdx) {
+                if (!isHidden)
+                    $(item).slideUp();
+            } else {
+                if (isHidden)
+                    $(item).removeClass("hidden");
+                $(item).slideDown();
+            }
+        });
+
+        $("input[name='uploadType']").val(itemIdx);
+    });
+});
+</script>
+<?php
+require_once('includes/footer.php');
+
+function isValidFile($fileData) {
+    global $errors;
+
+    $allowedFile = false;
+    $pathInfo = pathinfo($fileData['name']);
+    if ($fileData['type'] === "application/octet-stream") { // SQL/PKT files have that type, so we should extract extention from the pathinfo
+        if ($pathInfo['extension'] === "sql") {
+            if ($data['size'] < 10 * 1024 * 1024)
+                if (!$data['error'])
+                    $allowedFile = true;
+        }
+        else if ($pathInfo['extension'] === "pkt") {
+            // No size limit for the PKT (Actually let PHP handle it through its config).
+            // Anyway you *shouldn't* enable this unless you totally trust your users.
+            if (!$data['error'])
+                $allowedFile = true;
+        }
+    }
+    unset($pathInfo);
+    
+    if (!$allowedFile) {
+        switch ($data['error']) {
+            case 1: // UPLOAD_ERR_INI_SIZE
+            case 2: // UPLOAD_ERR_FORM_SIZE
+                $errors[] = "The file's size exceeds the limit.";
+                break;
+            case 3: // UPLOAD_ERR_PARTIAL
+                $errors[] = "The uploaded file has only been partially transferred.";
+                break;
+            case 4: // UPLOAD_ERR_NO_FILE:
+                // $errors[] = "No file has been uploaded."; // Debug only
+                break;
+        }
+    }
+    
+    return $allowedFile;
 }
 
 function injectSQL($commandBlock) {
@@ -94,6 +165,8 @@ function injectSQL($commandBlock) {
                 $mysqlConn->query($insertCommand . substr($line, -1)); // Remove the coma or semicolon.
         } else {
             $lineTokens = explode(" ", $line);
+            if (count($lineTokens) < 3)
+                continue;
             $isIgnore = ($lineTokens[1] === "IGNORE");
             if ($lineTokens[0] === "INSERT" && (($isIgnore && $lineTokens[2] === "INTO") || (!$isIgnore && $lineTokens[1] === "INTO"))) {
                 $insertCommand = ""; // We ensure nothing will get injected until we meet another INSERT query
@@ -103,15 +176,4 @@ function injectSQL($commandBlock) {
         }
     }
 }
-?>
-<script src="./includes/jquery.js"></script>
-<script type="text/javascript">
-$(function() {
-    $("input[name='overwriteBuild']").click(function() {
-        $("#buildEnforcer").css("display", $(this).val() == 1 ? "block" : "none");
-    });
-});
-</script>
-<?php
-include('includes/footer.php');
 ?>

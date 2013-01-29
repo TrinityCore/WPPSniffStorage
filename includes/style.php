@@ -1,6 +1,5 @@
-html, body {
-text-align: center;
-}
+<?php header("Content-type: text/css"); ?>
+html, body { text-align: center; }
 p {text-align: left;}
 
 body {
@@ -134,10 +133,10 @@ fieldset > legend {
     /* background: white; */
 }
 
-input[type="submit"] {
+input[type="submit"].submit {
     border: 1px solid black;
     border-radius: 4px;
-    background-color: rgb(255, 200, 200);
+    background-color: rgb(192, 224, 235);
     padding: 1px 8px;
 }
 
@@ -146,7 +145,7 @@ input[type="submit"] {
     width: 110px;
 }
 
-select
+form[name="search"] select
 {
     width: 120px;
     float:left;
@@ -237,3 +236,46 @@ fieldset label
 }
 
 hr { color: black; border: 0; border-top: 1px solid black; margin: 10px 0; }
+
+.hidden, *.hidden { display: none; }
+
+div#uploadTypeSelector {
+    display: block;
+    overflow: visible;
+    border-radius: 3px;
+    margin: auto;
+    margin-bottom: 25px;
+    width: <?php echo intval(isset($_GET['a']) ? $_GET['a'] : 0) * 335 + intval($_GET['a']) + 1; ?>px;
+}
+
+div#uploadTypeSelector a {
+    display: inline-block;
+    width: 335px;
+    text-align: center;
+    border: 1px solid #3269a0;
+    border-right: 0;
+    color: #333;
+    padding: 10px 0;
+    background-color: rgb(186, 219, 252);
+    background-image: -moz-linear-gradient(rgb(107, 166, 224), rgb(186, 219, 252));
+    background-image: -webkit-linear-gradient(rgb(107, 166, 224), rgb(186, 219, 252));
+    background-image: linear-gradient(rgb(107, 166, 224), rgb(186, 219, 252));
+}
+
+div#uploadTypeSelector a:first-of-type {
+    border-top-left-radius: 3px;
+    border-bottom-left-radius: 3px;
+}
+
+div#uploadTypeSelector a:last-of-type {   
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+    border-right: 1px solid #3269a0;
+}
+
+div#uploadTypeSelector a.activeSelector, div#uploadTypeSelector a:hover {
+    background-color: rgb(107, 166, 224);
+    background-image: -moz-linear-gradient(rgb(186, 219, 252), rgb(107, 166, 224));
+    background-image: -webkit-linear-gradient(rgb(186, 219, 252), rgb(107, 166, 224));
+    background-image: linear-gradient(rgb(186, 219, 252), rgb(107, 166, 224));
+}

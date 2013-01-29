@@ -17,9 +17,6 @@ $buildVersions = array(0 => "Zero",
 
 require_once('includes/header.php');
 
-if (!isset($pagenum))
-    $pagenum = 1;
-
 $builds = "";
 if ($result = $mysqlCon->query("SELECT DISTINCT(Build) AS b FROM SniffData")) {
     while ($row = $result->fetch_object()) {

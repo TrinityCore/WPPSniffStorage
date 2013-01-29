@@ -1,12 +1,21 @@
 ; <?php This is a sample configuration file
 ; Comments start with ';', as in php.ini
 
-[database]
+[Database]
 DBhost = "localhost"
 DBport = 3306
 DBuser = "root"
 DBpass = ""
 DBname = "wpp"
 
-[search options]
+[Search options]
 rowsPerPage = 20
+
+[Upload settings]
+; Allows *.pkt file upload. Disabled by default. 
+allowPkt = 0
+; Relative path to *.pkt files uploaded
+pktStoragePath = "./pktUploads"
+
+; Dont ask
+unused = "3899dcbab79f92af727c2190bbd8abc5"
