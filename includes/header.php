@@ -30,6 +30,7 @@ $types         = array('None', 'Spell', 'Map', 'LFGDungeon', 'Battleground', 'Un
                         <?php if (!empty($_SESSION['uid'])) { ?>
                         <li><a href="./logout.php">Quit</a></li>
                         <?php } ?>
+                        <li><a href="./filenames.php">Parsed sniffs list</a></li>
                         <li><a href="./upload.php">Upload</a></li>
                         <li><a href="./index.php">Search</a></li>
                     </ul>

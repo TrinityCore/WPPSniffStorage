@@ -279,3 +279,5 @@ div#uploadTypeSelector a.activeSelector, div#uploadTypeSelector a:hover {
     background-image: -webkit-linear-gradient(rgb(186, 219, 252), rgb(107, 166, 224));
     background-image: linear-gradient(rgb(186, 219, 252), rgb(107, 166, 224));
 }
+
+.matchPattern { font-weight: bold; color: green; }
