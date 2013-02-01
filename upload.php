@@ -163,7 +163,7 @@ function injectSQL($commandBlock) {
 
         if ($line[0] === "(") { // New record - Inject it, if we have a valid INSERT header
             if ($insertCommand !== "")
-                $mysqlCon->query($insertCommand . substr($line, -1)); // Remove the coma or semicolon.
+                $mysqlCon->query($insertCommand . substr($line, 0, -1)); // Remove the coma or semicolon.
         } else {
             $lineTokens = explode(" ", $line);
             if (count($lineTokens) < 3)
