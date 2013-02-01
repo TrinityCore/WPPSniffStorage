@@ -1,10 +1,11 @@
 <?php
 session_start();
-if (basename($_SERVER["SCRIPT_NAME"]) !== "login.php")
-    if (!isset($_SESSION['uid']) || empty($_SESSION['uid'])) // We don't bother with it, just a marker
-        header("Location: http://" . $_SERVER['HTTP_HOST'] . rtrim(dirname($_SERVER['PHP_SELF']), '/\\') . "/login.php");
-
 $config        = parse_ini_file("./includes/config.ini.php");
+
+if ($config['passwordProtection'] == "1" && basename($_SERVER["PHP_SELF"]) !== "login.php")
+    if (!isset($_SESSION['uid']) || empty($_SESSION['uid'])) // We don't bother with it, just a marker
+        header("Location: http://" . $_SERVER['SERVER_NAME'] . substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], '/')) . "/login.php");
+
 $mysqlCon      = new mysqli($config['DBhost'], $config['DBuser'], $config['DBpass'], $config['DBname']);
 $types         = array('None', 'Spell', 'Map', 'LFGDungeon', 'Battleground', 'Unit', 'GameObject', 'Item', 'Quest', 'PageText', 'NpcText', 'Gossip', 'Zone', 'Area', 'Phase', 'Player', 'Opcode Name', 'Opcode Number');
 

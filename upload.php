@@ -149,7 +149,7 @@ function isValidFile($fileData) {
 }
 
 function injectSQL($commandBlock) {
-    $commandLines  = array_map("trim", explode(chr(13), $commandBlock));
+    $commandLines  = array_map("trim", explode(PHP_EOL, $commandBlock));
     $lineIndex     = 0;
     $lineCount     = count($commandLines);
     $insertCommand = "";
@@ -170,7 +170,7 @@ function injectSQL($commandBlock) {
             $isIgnore = ($lineTokens[1] === "IGNORE");
             if ($lineTokens[0] === "INSERT" && (($isIgnore && $lineTokens[2] === "INTO") || (!$isIgnore && $lineTokens[1] === "INTO"))) {
                 $insertCommand = ""; // We ensure nothing will get injected until we meet another INSERT query
-                if (in_array(strtolower($lineTokens[$isIgnore ? 3 : 2]), array("sniffdata", "objectnames"))) // We're all set, assume it is a valid INSERT query
+                if (in_array(str_replace("`", "", strtolower($lineTokens[$isIgnore ? 3 : 2])), array("sniffdata", "objectnames"))) // We're all set, assume it is a valid INSERT query
                     $insertCommand = $line;
             }
         }
