@@ -149,6 +149,7 @@ function isValidFile($fileData) {
 }
 
 function injectSQL($commandBlock) {
+    global $mysqlCon;
     $commandLines  = array_map("trim", explode(PHP_EOL, $commandBlock));
     $lineIndex     = 0;
     $lineCount     = count($commandLines);
