@@ -154,6 +154,7 @@ function injectSQL($commandBlock) {
     $lineIndex     = 0;
     $lineCount     = count($commandLines);
     $insertCommand = "";
+    $insertSets    = array();
     while ($lineIndex < $lineCount) {
         $line = &$commandLines[$lineIndex];
         ++$lineIndex;
@@ -162,15 +163,21 @@ function injectSQL($commandBlock) {
             continue;
 
         if ($line[0] === "(") { // New record - Inject it, if we have a valid INSERT header
-            if ($insertCommand !== "")
-                $mysqlCon->query($insertCommand . substr($line, 0, -1)); // Remove the coma or semicolon.
+            if ($insertCommand !== "") {
+                // $mysqlCon->query($insertCommand . substr($line, 0, -1)); // Remove the coma or semicolon.
+                $insertSets[] = $line;
+                if (substr($line, -1) == ";") { // Insert and clean up
+                    $mysqlCon->multi_query($insertCommand . implode($insertSets));
+                    $insertSets = array();
+                    $insertCommand = ""; // We ensure nothing will get injected until we meet another INSERT query
+                }
+            }
         } else {
             $lineTokens = explode(" ", $line);
             if (count($lineTokens) < 3)
                 continue;
             $isIgnore = ($lineTokens[1] === "IGNORE");
             if ($lineTokens[0] === "INSERT" && (($isIgnore && $lineTokens[2] === "INTO") || (!$isIgnore && $lineTokens[1] === "INTO"))) {
-                $insertCommand = ""; // We ensure nothing will get injected until we meet another INSERT query
                 if (in_array(str_replace("`", "", strtolower($lineTokens[$isIgnore ? 3 : 2])), array("sniffdata", "objectnames"))) // We're all set, assume it is a valid INSERT query
                     $insertCommand = $line;
             }
