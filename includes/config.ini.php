@@ -19,3 +19,6 @@ pktStoragePath = "./pktUploads"
 
 ; Dont ask
 unused = "3899dcbab79f92af727c2190bbd8abc5"
+
+["Safety"]
+passwordProtection = 1 ; Enable password protection - Enabled by default

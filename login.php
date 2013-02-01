@@ -3,7 +3,7 @@ require_once('includes/header.php');
 
 if (!empty($_POST["user"]) && !empty($_POST["pass"])) {
     $safeHash = strtolower($_POST['user']) . ":" . sha1(substr($config['unused'], 0, 5) . strtoupper($_POST["user"]) . ":" . strtoupper($_POST['pass']) . substr($config['unused'], 5));
-    // echo $safeHash; // Uncomment to get a hash pair to store in pair.txt
+    // die($safeHash); // Uncomment to get a hash pair to store in pair.txt
     $pairs = array_map("trim", explode(chr(13), file_get_contents("./pair.txt")));
     $valid = false;
     foreach ($pairs as $pair) {
