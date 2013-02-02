@@ -23,40 +23,64 @@ if ($result = $mysqlCon->query("SELECT DISTINCT(SniffName) AS f FROM SniffData")
 <script src="./includes/jquery.js"></script>
 <script type="text/javascript">
 $(function() {
+    var searchTimer;
     $('input[name="sniffName"]').keyup(function() {
-        var searchString = $(this).val(),
-            hasExactName = (jQuery.inArray(searchString, sniffFiles) != -1),
-            approxFiles  = [],
-            sniffCount   = 0;
-        
-        $("#approxMatch").html("");
-        if (searchString.length == 0) {
+        if ($(this).val().length == 0) {
+            clearTimeout(searchTimer);
+            $("#approxMatch").html("");
             $("#extraMatch").html("");
             $("#sniffCount").html(0);
-        } else {
-            if (hasExactName)
-                $("#extraMatch").html('Exact match has been found: that sniff has been parsed.');
-
-            // Also look for strings containing the filename
-            jQuery.each(sniffFiles, function(idx, item) {
-                if ((new RegExp(searchString, "i")).test(item) && item.toLowerCase() != searchString.toLowerCase()) {
-                    approxFiles.push(item);
-                    ++sniffCount;
-                }
-            });
-            unique(approxFiles);
-            jQuery.each(approxFiles, function(idx, item) {
-                $("#approxMatch").html($("#approxMatch").html() + ($("#approxMatch").html().length > 0 ? '<br />' : '') + item.replace(searchString, '<span class="matchPattern">' + searchString + '</span>'));
-            });
-            $("#sniffCount").html(sniffCount + (hasExactName ? 1 : 0));
+            return;
         }
-    });
 
-    function unique(array){
-        return $.grep(array,function(el,index){
-            return index == $.inArray(el,array);
-        });
-    }
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(function() {
+            $("#approxMatch").html("");
+            $("#extraMatch").html("");
+
+            var searchString = $('input[name="sniffName"]').val(),
+                hasExactName = (jQuery.inArray(searchString, sniffFiles) != -1),
+                approxFiles  = [],
+                sniffCount   = 0;
+                
+            // Cleaning up the search string to remove metacharacters
+            searchString = searchString.replace("(", "\\(");
+            searchString = searchString.replace(")", "\\)");
+            searchString = searchString.replace(".", "\\.");
+            
+            if (searchString.length == 0) {
+                $("#sniffCount").html(0);
+            } else {
+                if (hasExactName) {
+                    $("#extraMatch").html('An exact match has been found: that sniff has been parsed.');
+                    $("#sniffCount").html(1);
+                } else {
+                    var regex = new RegExp("(" + searchString + ")", "i");
+                    console.log(regex);
+                    // Look for strings containing the filename
+                    for (var i in sniffFiles) {
+                        if (sniffCount > 50)
+                            break;
+
+                        var item = sniffFiles[i];
+                    // jQuery.each(sniffFiles, function(idx, item) {
+                        if (regex.test(item.substring(0, item.length - 4)) && item.toLowerCase() != searchString.toLowerCase()) {
+                            approxFiles.push(item);
+                            ++sniffCount;
+                        }
+                    }/*)*/  ;
+
+                    if (approxFiles.length != 0) {
+                        $("#approxMatch").html("<b>Possible matches:</b>");
+                        jQuery.each(approxFiles, function(idx, item) {
+                            $("#approxMatch").html($("#approxMatch").html() + '<br />' + item.replace(regex, '<span class="matchPattern">$1</span>'));
+                        });
+                    }
+                    $("#sniffCount").html(sniffCount);
+                }
+            }
+        }, 750);
+    });
 });
 </script>
 <?php
