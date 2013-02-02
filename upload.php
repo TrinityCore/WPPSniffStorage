@@ -112,26 +112,44 @@ require_once('includes/footer.php');
 
 function isValidFile($fileData) {
     global $errors;
-
+    
     $allowedFile = false;
     $pathInfo = pathinfo($fileData['name']);
     if ($fileData['type'] === "application/octet-stream") { // SQL/PKT files have that type, so we should extract extention from the pathinfo
         if ($pathInfo['extension'] === "sql") {
-            if ($data['size'] < 10 * 1024 * 1024)
-                if (!$data['error'])
+            if ($fileData['size'] < 10 * 1024 * 1024)
+                if (!$fileData['error'])
                     $allowedFile = true;
         }
         else if ($pathInfo['extension'] === "pkt") {
             // No size limit for the PKT (Actually let PHP handle it through its config).
             // Anyway you *shouldn't* enable this unless you totally trust your users.
-            if (!$data['error'])
+            if (!$fileData['error'])
                 $allowedFile = true;
+        }
+    } else if ($fileData['type'] === "application/x-zip-compressed") {
+        /// TODO: Hack: Prevents injectSQL() from being called next
+        $allowedFile = false;
+        if (!$fileData['error']) {
+            $zip = new ZipArchive();
+            if ($zip->open($fileData['tmp_name'])) {
+                for ($i = 0; $i < $zip->numFiles; ++$i) {
+                    $fileInfo = $zip->statIndex($i);
+                    if (end(explode('.', $fileInfo['name'])) !== "sql")
+                        continue;
+                    injectSQL($zip->getFromIndex($fileInfo['index']));
+                }
+                $zip->close();
+            } else {
+                $errors[] = "Could not extract the ZIP file.";
+                $allowedFile = false;
+            }
         }
     }
     unset($pathInfo);
     
     if (!$allowedFile) {
-        switch ($data['error']) {
+        switch ($fileData['error']) {
             case 1: // UPLOAD_ERR_INI_SIZE
             case 2: // UPLOAD_ERR_FORM_SIZE
                 $errors[] = "The file's size exceeds the limit.";
