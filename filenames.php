@@ -79,7 +79,7 @@ $(function() {
                     $("#sniffCount").html(sniffCount);
                 }
             }
-        }, 750);
+        }, 500);
     });
 });
 </script>
