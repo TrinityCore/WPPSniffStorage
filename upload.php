@@ -27,6 +27,7 @@ require_once('includes/header.php');
         <input type="submit" name="submit" value="Submit" />
     </div>
     <div class="uploadFormHolder hidden">
+        <p>Only .zip and .sql files are allowed.</p>
         <input type="file" name="sqlData" />
         <input type="submit" name="submit" value="Submit" />
     </div>
