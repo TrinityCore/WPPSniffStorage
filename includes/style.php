@@ -267,7 +267,7 @@ div#uploadTypeSelector a:first-of-type {
     border-bottom-left-radius: 3px;
 }
 
-div#uploadTypeSelector a:last-of-type {   
+div#uploadTypeSelector a:last-of-type {
     border-top-right-radius: 3px;
     border-bottom-right-radius: 3px;
     border-right: 1px solid #3269a0;
@@ -281,3 +281,16 @@ div#uploadTypeSelector a.activeSelector, div#uploadTypeSelector a:hover {
 }
 
 .matchPattern { font-weight: bold; color: green; }
+
+#resultSet a {
+    border-bottom: 1px dotted black;
+    cursor: help;
+}
+
+#resultSet tr.odd td {
+    background-color: rgb(170, 219, 236);
+}
+
+#resultSet th {
+    background-color: white;
+}

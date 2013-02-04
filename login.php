@@ -16,7 +16,7 @@ if (!empty($_POST["user"]) && !empty($_POST["pass"])) {
             break;
         }
     }
-    
+
     if (!$valid)
         echo "Sorry, wrong credentials. Try <a href=\"./login.php\">again</a>.";
     else

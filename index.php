@@ -15,7 +15,8 @@ $buildVersions = array(0 => "Zero",
                        14333 => "4.2.0 14333",14480 => "4.2.0a 14480", 14545 => "4.2.2 14545",
                        15005 => "4.3.0 15005",15050 => "4.3.0 15050", 15211 => "4.3.2 15211", 15354 => "4.3.3 15354", 15595 => "4.3.4 15595");
 
-require_once('includes/header.php');
+require_once('./includes/header.php');
+require_once('./includes/SniffQuery.php');
 
 $builds = "";
 if ($result = $mysqlCon->query("SELECT DISTINCT(Build) AS b FROM SniffData")) {
@@ -27,38 +28,47 @@ if ($result = $mysqlCon->query("SELECT DISTINCT(Build) AS b FROM SniffData")) {
     }
 }
 
-$searchQuantity = isset($_POST['searches']) ? $_POST['searches'] : 1;
+$searchQuantity = isset($_POST['entryType']) ? count($_POST['entryType']) : 1;
+$startOffset = isset($_GET['startOffset']) ? intval($_GET['startOffset']) : 0;
 ?>
-<form name="search" method="post">
+<form action="?startOffset=<?php echo $startOffset; ?>" name="search" method="post">
   <table><tr><td>
     <fieldset>
         <legend>Sniff Search</legend>
-        <input type="hidden" name="searches" value="<?php echo $searchQuantity; ?>" id="searches" />
         <div id="entryContainer">
             <p style="float:right; margin-top: -10px;">
                 <a id="addSearch">Add New Search</a> | <a id="removeSearch">Remove Last Search</a>
             </p>
             <?php
-            for ($l = 0; $l < $searchQuantity; $l++) {
+            for ($i = 0; $i < $searchQuantity; ++$i) {
             ?>
-            <div id="entries<?php echo $l; ?>" style="clear:left;">
+            <div id="entries<?php echo $i; ?>" style="clear:left;" class="searchFilter">
                 <label>Entry Type: </label>
-                <select name="entryType<?php echo $l; ?>" onchange="filterSelect(this)">
+                <select name="entryType[]" onchange="filterSelect(this)">
                 <?php
-                    for ($i = 0, $m = count($types); $i < $m; ++$i) {
-                        echo "<option value=\"" . $types[$i] . "\"";
-                        if (isset($_POST['entryType'.$l]) && $_POST['entryType' . $l] == $types[$i])
+                    for ($j = 0, $m = count($types); $j < $m; ++$j) {
+                        echo '<option value="' . $types[$j] . '"';
+                        if (isset($_POST['entryType'][$i]) && $_POST['entryType'][$i] == $types[$j])
                             echo ' selected';
-                        echo ">" . $types[$i] . "</option>";
+                        echo ">" . $types[$j] . "</option>";
                     }
                 ?>
                 </select>
-                <label for="entry<?php echo $l; ?>">Entry: </label>
-                <input type="text" name="entry<?php echo $l; ?>" class="searchInput" value="<?php echo isset($_POST['entry' . $l]) ? $_POST['entry' . $l] : ""; ?>" />
-                <p style="display:none;clear:both;" id="likesentries<?php echo $l; ?>">
-                    <input type="checkbox" name="likes<?php echo $l; ?>" value="1" <?php if (isset($_POST['likes' . $l])) echo 'checked '; ?>/>
+                <label>Entry: </label>
+                <input type="text" name="entry[]" class="searchInput" value="<?php echo isset($_POST['entry'][$i]) ? $_POST['entry'][$i] : ""; ?>" />
+                <!--<p style="display:none;clear:both;" id="likesentries[]">
+                    <input type="checkbox" name="likeBehavior[]" value="1" <?php if (isset($_POST['likes'][$i])) echo 'checked '; ?>/>
                     Use like instead of equals for opcode name.
+                </p>-->
+                <?php if ($searchQuantity != 1 && $i+1 != $searchQuantity) { ?>
+                <hr />
+                <p style="clear: both">
+                    <input type="checkbox" name="isAndGroup[]" <?php
+                        if (isset($_POST['isAndGroup'][$i]) && $_POST['isAndGroup'][$i] == true)
+                            echo "checked ";
+                    ?>/> Previous search OR new search (Defaults to AND).
                 </p>
+                <?php } ?>
             </div>
             <?php
             }
@@ -76,160 +86,97 @@ $searchQuantity = isset($_POST['searches']) ? $_POST['searches'] : 1;
 
 <?php
 if (isset($_POST['submit'])) {
-    $sql = "SELECT Build, SniffName, ObjectType, Id, Data, name FROM (";
-    $tmpsql = "SELECT a.Build,a.SniffName,a.ObjectType,a.Id,a.Data,b.name AS name FROM SniffData AS a LEFT OUTER JOIN objectnames AS b on a.Id = b.Id AND a.ObjectType = b.ObjectType";
-    $wherearr = array();
-    $likes = isset($_POST['likes']) ? $_POST['likes'] : array();
-    $wheres = array();
-    for ($i = 0; $i < $_POST['searches'];$i++) {
-        $type = $_POST['entryType'.$i];
-        $value = $_POST['entry'.$i];
-        if (/*empty($value) || */$type == 'None')
+    $sqlQuery = new SniffQuery(isset($_POST['builds']) ? $_POST['builds'] : array(), $startOffset);
+
+    $likes        = isset($_POST['likes']) ? $_POST['likes'] : array();
+    $patternCount = count($_POST['entryType']);
+    for ($i = 0; $i < $patternCount; ++$i) {
+        $type  = $_POST['entryType'][$i];
+        $value = $_POST['entry'][$i];
+
+        if ($type == "None")
             continue;
-        if ($type == 'Opcode Number')
-            $type = 'Opcode';
-        if (!isset($wheres[$type]))
-            $wheres[$type] = array();
-        if ($type == 'Opcode Name') {
-            if (!empty($_POST['likes'.$i])) {
-                if (!in_array(array( 'Like' => true, 'opcode' => '%'.$value.'%'),$wheres[$type]))
-                    array_push($wheres[$type], array('opcode' => '%'.$value.'%',  'Like' => true));
-            } else {
-                if (!in_array(array( 'Like' => false, 'opcode' => $value),$wheres[$type]))
-                    array_push($wheres[$type], array('opcode' => $value,  'Like' => false));
-            }
-        } else {
-            if (in_array($value, $wheres[$type]))
-                continue;
-            array_push($wheres[$type],$value);
+
+        if ($type == "Opcode Number")
+            $sqlQuery->AddCondition(SniffQuery::DATABASE_SNIFFDATA."Opcode", $value, SniffQuery::CONDITION_EQUAL);
+        else if ($type == "Opcode Name")
+            $sqlQuery->AddCondition(SniffQuery::DATABASE_OBJECTNAMES."name", $value, SniffQuery::CONDITION_LIKE);
+        else {
+            $sqlQuery->AddCondition(SniffQuery::DATABASE_SNIFFDATA."ObjectType", $type, SniffQuery::CONDITION_EQUAL);
+            if (!empty($value))
+                $sqlQuery->AddCondition(ctype_digit($value) ? SniffQuery::DATABASE_SNIFFDATA."Id" : SniffQuery::DATABASE_OBJECTNAMES."name", $value);
         }
-    }
-    // Build all the WHERE conditions
-    foreach ($wheres AS $key => $value) {
-        $where = '';
-        $type = $key;
-        if ($type == 'Opcode Name' || $type == 'Opcode Number') $type = 'Opcode';
-        for ($i = 0; $i < count($value);$i++) {
-            $valValue = &$value[$i];
-            if (empty($valValue))
-                continue;
-            if ($key == 'Opcode Name') {
-                if ($where)
-                    $where .= ' OR ';
-                if ($valValue['Like'])
-                    $where .= "data LIKE '".$mysqlCon->escape_string($valValue['opcode'])."'";
-                else
-                    $where .= "data = '".$valValue['opcode']."'";
-            } else {
-                if ($where)
-                    $where .= ' OR ';
-                if (is_numeric($valValue))
-                    $where .= ' a.Id = '.$valValue;
-                else
-                    $where .= " b.name LIKE '%".$mysqlCon->escape_string($valValue)."%'";
-            }
-        }
-        $whereStr = "a.ObjectType='" . $type . "'";
-        if ($where != "")
-            $whereStr .= " AND (".trim($where).")";
-        array_push($wherearr, $whereStr);
+
+        /// NOT a typo: just me not thinking straight when coding.
+        $sqlQuery->SetAndGroup(isset($_POST['isAndGroup'][$i]) ? !$_POST['isAndGroup'][$i] : true);
+
+        $sqlQuery->CreateNewConditionGroup();
     }
 
-    if (!empty($wherearr)) {
-        // Build the SQL query
-        for ($i = 0; $i < count($wherearr); ++$i) {
-            if ($i)
-                $sql.=' UNION ALL ';
-            $sql .= $tmpsql." WHERE ".$wherearr[$i];
-            if (isset($_POST['builds']))
-                $sql .= ' AND Build IN ('.implode(",", $_POST['builds']).')';
+    $resultSet = $sqlQuery->Generate();
+    if ($resultSet === false)
+        echo "Nothing to look for, sorreh.";
+    else if (count($resultSet) > 0) {
+        echo '<table id="resultSet"><tr><th style="width:90px">Build</th><th style="width:183px">Sniff Name</th><th>Data Name</th><th style="width:70px">Value</th><th>Name</th></tr>';
+        foreach ($resultSet as $i => &$row) {
+            echo '<tr' . ($i % 2 == 0 ? " class='odd'" : '') . '><td>' . $row[0] . '</td>';
+            echo '<td><a title="' . $row[1] . '">' . substr($row[1], 0, 28) . '</a></td>';
+            echo '<td>' . $row[2] . '</td>';
+            echo '<td>' . $row[3] . '</td>';
+            echo '<td>' . $row[4] . '</td></tr>';
         }
-        $sql .= ') AS SniffsData GROUP BY SniffName, Id, Data, ObjectType ORDER BY SniffName, ObjectType ASC';
-
-        if ($result = $mysqlCon->query($sql)) {
-            if ($result->num_rows) {
-                echo '<table id="resultSet"><tr><th style="width:90px">Build</th><th style="width:183px">Sniff Name</th><th>Data Name</th><th style="width:70px">Value</th><th>Name</th></tr>';
-                while ($row = $result->fetch_array(MYSQLI_ASSOC)) {
-                    echo '<tr><td>' . $buildVersions[$row["Build"]] . '</td>';
-                    echo '<td>' . (strlen($row["SniffName"]) > 25 ? substr($row["SniffName"], 0, 20) . "..." : $row["SniffName"]) . '</td>';
-                    echo '<td>' . $row["Data"] . '</td>';
-                    echo '<td>' . $row["Id"] . '</td>';
-                    echo '<td>' . $row["name"] . '</td></tr>';
-                }
-                echo '</table>';
-            } else
-                echo 'No Results Found';
-        } else
-            echo 'No Results Found';
-        echo '<div id="sqlQueryContainer"><u>SQL Request:</u><br/>' .$sql . '</div>';
-    } else
-        echo "Nothing to Search For";
+        echo "</table>";
+    } else echo "No result found matching your query.";
 }
 ?>
 <script src="./includes/jquery.js"></script>
 <script>
 $(function() {
+    var types = <?php echo json_encode($types); ?>;
+
     function filterSelect(select) {
-        var searchIndex = $(select).attr('name');
-        searchIndex = searchIndex.replace('entryType','');
-        if ($(select).children('option:selected').val() == 'Opcode Name')
-            $('#likesentries'+searchIndex).show();
-        else
-            $('#likesentries'+searchIndex).hide();
+        alert("Yeah, i'm broken too.");
     }
 
-
     $("#removeSearch").click(function() {
-        var entriesCount = parseInt($('#searches').val());
-        if (entriesCount > 1)
-        {
-            $('#entries'+(entriesCount-1)).remove();
-            $('#searches').val(entriesCount-1);
-        }
+        if ($(".searchFilter").length > 1)
+            $(".searchFilter").last().remove();
     });
 
     $("#addSearch").click(function() {
-        var types = <?php echo json_encode($types); ?>,
-            entriesCount = parseInt($('#searches').val()),
-            entriesDiv = $(document.createElement('div')).attr('id','entries' + entriesCount);
+        // var filtersCount = $("div.searchFilter").length;
+        var entriesDiv = $(document.createElement('div')).attr('class', 'searchFilter');
         $(entriesDiv).append($(document.createElement('hr'))).css({
             'clear': 'both',
             'margin-bottom': '4px'
         });
         $(entriesDiv).append($(document.createElement('p')).css('clear','both').append($(document.createElement('input')).attr({
             'type': 'checkbox',
-            'name': 'andor' + entriesCount}
-        )).append(' Previous search OR new search (Defaults as AND)'));
-        $(entriesDiv).append($(document.createElement('label')).attr('for','entryType' + entriesCount).text('Entry Type: '));
-        var entriesSel = $(document.createElement('select')).attr('name','entryType' + entriesCount);
+            'name': 'isAndGroup[]'}
+        )).append(' Previous search OR new search (Defaults to AND).'));
+        $(entriesDiv).append($(document.createElement('label')).text('Entry Type: '));
+        var entriesSel = $(document.createElement('select')).attr('name','entryType[]');
 
         for (type in types)
             $(entriesSel).append($(document.createElement('option')).val(types[type]).text(types[type]));
 
         $(entriesDiv).append($(entriesSel));
-        $(entriesDiv).append($(document.createElement('label')).attr('for','entry' + entriesCount).text('Entry: '));
-
+        $(entriesDiv).append($(document.createElement('label')).text('Entry: '));
         $(entriesDiv).append($(document.createElement('input')).attr({
             'type': 'text',
-            'name': 'entry'+entriesCount
+            'name': 'entry[]'
         }).addClass('searchInput'));
 
-        $(entriesDiv).append($(document.createElement('p')).css({
+        /* $(entriesDiv).append($(document.createElement('p')).css({
             'display': 'none',
             'clear': 'both'
         }).attr('id','likesentries' + entriesCount).append($(document.createElement('input')).attr({
             'type': 'checkbox',
             'name': 'likes' + entriesCount
-        }).val(1)).append(' Use like instead of equals for opcode name.'));
+        }).val(1)).append(' Use like instead of equals for opcode name.')); */
 
-        $(entriesDiv).append($(document.createElement('input')).attr({
-            'type': 'hidden',
-            'name': 'existingEntries'
-        }).val(entriesCount));
-
-        $('#searches').val(entriesCount + 1);
         $('#entryContainer').append(entriesDiv);
-        $('#entries' + entriesCount+' select').change(function(i) { filterSelect(this); });
+        // $('#entries[] select').change(function(i) { filterSelect(this); });
     });
 });
 </script>

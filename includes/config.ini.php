@@ -12,7 +12,7 @@ DBname = "wpp"
 rowsPerPage = 20
 
 [Upload settings]
-; Allows *.pkt file upload. Disabled by default. 
+; Allows *.pkt file upload. Disabled by default.
 allowPkt = 0
 ; Relative path to *.pkt files uploaded
 pktStoragePath = "./pktUploads"

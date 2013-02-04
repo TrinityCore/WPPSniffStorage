@@ -37,17 +37,18 @@ $(function() {
         searchTimer = setTimeout(function() {
             $("#approxMatch").html("");
             $("#extraMatch").html("");
+            $("#filterMoar").html("");
 
             var searchString = $('input[name="sniffName"]').val(),
                 hasExactName = (jQuery.inArray(searchString, sniffFiles) != -1),
                 approxFiles  = [],
                 sniffCount   = 0;
-                
+
             // Cleaning up the search string to remove metacharacters
             searchString = searchString.replace("(", "\\(");
             searchString = searchString.replace(")", "\\)");
             searchString = searchString.replace(".", "\\.");
-            
+
             if (searchString.length == 0) {
                 $("#sniffCount").html(0);
             } else {
@@ -60,7 +61,11 @@ $(function() {
                     // Look for strings containing the filename
                     for (var i in sniffFiles) {
                         if (sniffCount > 50)
+                        {
+                            $("#sniffCount").html($("#sniffCount").html() + "+");
+                            $("#filterMoar").html("Too many results. Improve your search string.");
                             break;
+                        }
 
                         var item = sniffFiles[i];
                     // jQuery.each(sniffFiles, function(idx, item) {
@@ -79,7 +84,7 @@ $(function() {
                     $("#sniffCount").html(sniffCount);
                 }
             }
-        }, 500);
+        }, 750);
     });
 });
 </script>
