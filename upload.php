@@ -26,6 +26,7 @@ require_once('includes/header.php');
         <textarea name="sniffData" style="width: 100%; height: 150px"></textarea>
         <input type="submit" name="submit" value="Submit" />
     </div>
+
     <div class="uploadFormHolder hidden">
         <p>Only .zip and .sql files are allowed.</p>
         <input type="file" name="sqlData" />
@@ -72,7 +73,7 @@ if (isset($_POST['submit']) && $_POST['uploadType'] != -1) {
             $errors[] = "Invalid submitted action.";
             break;
     }
-    
+
     if (!empty($errors)) {
         echo "<h4>Errors list</h4><ul>";
         foreach ($errors as &$error)
@@ -113,22 +114,21 @@ require_once('includes/footer.php');
 
 function isValidFile($fileData) {
     global $errors;
-    
     $allowedFile = false;
+
     $pathInfo = pathinfo($fileData['name']);
-    if ($fileData['type'] === "application/octet-stream") { // SQL/PKT files have that type, so we should extract extention from the pathinfo
-        if ($pathInfo['extension'] === "sql") {
-            if ($fileData['size'] < 10 * 1024 * 1024)
-                if (!$fileData['error'])
-                    $allowedFile = true;
-        }
-        else if ($pathInfo['extension'] === "pkt") {
-            // No size limit for the PKT (Actually let PHP handle it through its config).
-            // Anyway you *shouldn't* enable this unless you totally trust your users.
+    if ($pathInfo['extension'] === "sql") {
+        if ($fileData['size'] < 10 * 1024 * 1024)
             if (!$fileData['error'])
                 $allowedFile = true;
-        }
-    } else if ($fileData['type'] === "application/x-zip-compressed") {
+    }
+    else if ($pathInfo['extension'] === "pkt") {
+        // No size limit for the PKT (Actually let PHP handle it through its config).
+        // Anyway you *shouldn't* enable this unless you totally trust your users.
+        if (!$fileData['error'])
+            $allowedFile = true;
+    }
+    else if ($pathInfo['extension'] === "zip") {
         /// TODO: Hack: Prevents injectSQL() from being called next
         $allowedFile = false;
         if (!$fileData['error']) {
@@ -148,7 +148,7 @@ function isValidFile($fileData) {
         }
     }
     unset($pathInfo);
-    
+
     if (!$allowedFile) {
         switch ($fileData['error']) {
             case 1: // UPLOAD_ERR_INI_SIZE
@@ -163,7 +163,7 @@ function isValidFile($fileData) {
                 break;
         }
     }
-    
+
     return $allowedFile;
 }
 
@@ -174,10 +174,10 @@ function injectSQL($commandBlock) {
     $lineCount     = count($commandLines);
     $insertCommand = "";
     $insertSets    = array();
+    $affectedRows  = intval($mysqlCon->query("SELECT COUNT(*) AS n FROM SniffData")->fetch_object()->n);
     while ($lineIndex < $lineCount) {
         $line = &$commandLines[$lineIndex];
         ++$lineIndex;
-
         if (empty($line))
             continue;
 
@@ -186,7 +186,10 @@ function injectSQL($commandBlock) {
                 // $mysqlCon->query($insertCommand . substr($line, 0, -1)); // Remove the coma or semicolon.
                 $insertSets[] = $line;
                 if (substr($line, -1) == ";") { // Insert and clean up
-                    $mysqlCon->multi_query($insertCommand . implode($insertSets));
+                    $mysqlCon->multi_query($insertCommand . implode(PHP_EOL, $insertSets));
+
+                    if ($mysqlCon->affected_rows == -1)
+                        echo "<span style=\"color: red;\">Something bad happened!</span>" . $mysqlCon->error . "<br />";
                     $insertSets = array();
                     $insertCommand = ""; // We ensure nothing will get injected until we meet another INSERT query
                 }
@@ -202,5 +205,9 @@ function injectSQL($commandBlock) {
             }
         }
     }
+    $affectedRows = intval($mysqlCon->query("SELECT COUNT(*) AS n FROM SniffData")->fetch_object()->n) - $affectedRows;
+    echo $affectedRows . " rows injected!";
+    if ($affectedRows == 0)
+        echo " No data was injected, because it is already present in database.";
 }
 ?>
