@@ -1,4 +1,5 @@
 <?php
+error_reporting(E_ALL);
 session_start();
 $config        = parse_ini_file("./includes/config.ini.php");
 

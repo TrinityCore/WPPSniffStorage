@@ -83,7 +83,7 @@ class SniffQuery {
                 }
             }
             $query .= "(" . implode(" AND ", $queryString) . ")";
-            if ($groupId+1 != $this->conditionGroupIdx)
+            if ($groupId + 1 != $this->conditionGroupIdx)
                 $query .= in_array($groupId, $this->andGroups) ? " AND " : " OR ";
         }
 
@@ -106,6 +106,8 @@ class SniffQuery {
 
         $paramsArray[0] .= "i";
         $paramsArray[]  = &$this->offset;
+
+        $this->DebugQuery($query, $paramsArray);
 
         $stmt = $mysqlCon->prepare($query);
         if (!$stmt)
@@ -131,4 +133,15 @@ class SniffQuery {
     }
 
     public function GetLastError() { return end($this->errorsLog); }
+
+    public function DebugQuery($stmt, $paramsArray) {
+        var_dump("<p>Prepared Statement: $stmt</p>");
+        for ($i = 1, $l = count($paramsArray); $i < $l; ++$i)
+        {
+            $position = strpos($stmt, "?");
+            if ($position!== false)
+                $stmt = substr_replace($stmt, $paramsArray[$i], $position, strlen("?"));
+        }
+        var_dump("<p>Executed statement: $stmt</p>");
+    }
 }

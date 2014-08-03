@@ -1,5 +1,5 @@
 <?php
-$buildVersions = array(0 => "Zero",
+$buildVersions = array(0 => "All Builds",
                        5875 => "1.12.1 5875",
                        6180 => "2.0.1 6180", 6299 => "2.0.3 6299", 6337 => "2.0.6 6337",
                        6692 => "2.1.0 6692", 6739 => "2.1.1 6739", 6803 => "2.1.2 6803", 6898 => "2.1.3 6898",
@@ -18,8 +18,8 @@ $buildVersions = array(0 => "Zero",
 require_once('./includes/header.php');
 require_once('./includes/SniffQuery.php');
 
-$builds = "";
-if ($result = $mysqlCon->query("SELECT DISTINCT(Build) AS b FROM SniffData")) {
+$builds = '<li><input type="checkbox" name="builds[]" value="0"> &nbsp; All Builds</li>';
+if ($result = $mysqlCon->query("SELECT DISTINCT(Build) AS b FROM SniffData WHERE b != 0 ORDER BY b DESC")) {
     while ($row = $result->fetch_object()) {
         $builds .= '<li><input type="checkbox" name="builds[]" value="' . $row->b . '"';
         if (isset($_POST['builds']) && in_array($row->b, $_POST["builds"]))
@@ -28,10 +28,10 @@ if ($result = $mysqlCon->query("SELECT DISTINCT(Build) AS b FROM SniffData")) {
     }
 }
 
-$searchQuantity = isset($_POST['entryType']) ? count($_POST['entryType']) : 1;
-$startOffset = isset($_GET['startOffset']) ? intval($_GET['startOffset']) : 0;
+$searchQuantity = isset($_GET['entryType']) ? count($_GET['entryType']) : 1;
+$startOffset    = isset($_GET['startOffset']) ? intval($_GET['startOffset']) : 0;
 ?>
-<form action="?startOffset=<?php echo $startOffset; ?>" name="search" method="post">
+<form action="?startOffset=<?php echo $startOffset; ?>" name="search" method="get">
   <table><tr><td>
     <fieldset>
         <legend>Sniff Search</legend>
@@ -42,13 +42,13 @@ $startOffset = isset($_GET['startOffset']) ? intval($_GET['startOffset']) : 0;
             <?php
             for ($i = 0; $i < $searchQuantity; ++$i) {
             ?>
-            <div id="entries<?php echo $i; ?>" style="clear:left;" class="searchFilter">
+            <div class="entry" style="clear: left;" class="searchFilter">
                 <label>Entry Type: </label>
                 <select name="entryType[]" onchange="filterSelect(this)">
                 <?php
                     for ($j = 0, $m = count($types); $j < $m; ++$j) {
                         echo '<option value="' . $types[$j] . '"';
-                        if (isset($_POST['entryType'][$i]) && $_POST['entryType'][$i] == $types[$j])
+                        if (isset($_GET['entryType'][$i]) && $_GET['entryType'][$i] == $types[$j])
                             echo ' selected';
                         echo ">" . $types[$j] . "</option>";
                     }
@@ -56,15 +56,15 @@ $startOffset = isset($_GET['startOffset']) ? intval($_GET['startOffset']) : 0;
                 </select>
                 <label>Entry: </label>
                 <input type="text" name="entry[]" class="searchInput" value="<?php echo isset($_POST['entry'][$i]) ? $_POST['entry'][$i] : ""; ?>" />
-                <!--<p style="display:none;clear:both;" id="likesentries[]">
-                    <input type="checkbox" name="likeBehavior[]" value="1" <?php if (isset($_POST['likes'][$i])) echo 'checked '; ?>/>
+                <p style="display:none;clear:both;" id="likesentries[]">
+                    <input type="checkbox" name="likeBehavior[]" value="1" <?php if (isset($_POST['likeBehavior'][$i])) echo 'checked '; ?>/>
                     Use like instead of equals for opcode name.
-                </p>-->
+                </p>
                 <?php if ($searchQuantity != 1 && $i+1 != $searchQuantity) { ?>
                 <hr />
                 <p style="clear: both">
                     <input type="checkbox" name="isAndGroup[]" <?php
-                        if (isset($_POST['isAndGroup'][$i]) && $_POST['isAndGroup'][$i] == true)
+                        if (isset($_GET['isAndGroup'][$i]) && $_GET['isAndGroup'][$i] == true)
                             echo "checked ";
                     ?>/> Previous search OR new search (Defaults to AND).
                 </p>
@@ -74,7 +74,7 @@ $startOffset = isset($_GET['startOffset']) ? intval($_GET['startOffset']) : 0;
             }
             ?>
         </div>
-        <input type="submit" name="submit" class="submit" value="Submit" />
+        <input type="submit" name="exec" class="submit" value="Submit" />
     </fieldset>
   </td><td>
     <fieldset class="clientBuildSelector">
@@ -85,30 +85,35 @@ $startOffset = isset($_GET['startOffset']) ? intval($_GET['startOffset']) : 0;
 </form>
 
 <?php
-if (isset($_POST['submit'])) {
-    $sqlQuery = new SniffQuery(isset($_POST['builds']) ? $_POST['builds'] : array(), $startOffset);
+if (isset($_GET['exec'])) {
+    $sqlQuery = new SniffQuery(isset($_GET['builds']) ? $_GET['builds'] : array(), $startOffset);
 
-    $likes        = isset($_POST['likes']) ? $_POST['likes'] : array();
-    $patternCount = count($_POST['entryType']);
+    $likes        = isset($_GET['likes']) ? $_GET['likes'] : array();
+    $patternCount = count($_GET['entryType']);
     for ($i = 0; $i < $patternCount; ++$i) {
-        $type  = $_POST['entryType'][$i];
-        $value = $_POST['entry'][$i];
+        $type  = $_GET['entryType'][$i];
+        $value = $_GET['entry'][$i];
 
         if ($type == "None")
             continue;
 
-        if ($type == "Opcode Number")
-            $sqlQuery->AddCondition(SniffQuery::DATABASE_SNIFFDATA."Opcode", $value, SniffQuery::CONDITION_EQUAL);
-        else if ($type == "Opcode Name")
-            $sqlQuery->AddCondition(SniffQuery::DATABASE_OBJECTNAMES."name", $value, SniffQuery::CONDITION_LIKE);
-        else {
+        if ($type == "Opcode Number") {
+            $sqlQuery->AddCondition(SniffQuery::DATABASE_SNIFFDATA."ObjectType", "Opcode", SniffQuery::CONDITION_EQUAL);
+            $sqlQuery->AddCondition(SniffQuery::DATABASE_SNIFFDATA."Id", $value, SniffQuery::CONDITION_EQUAL);
+        } else if ($type == "Opcode Name") {
+            $sqlQuery->AddCondition(SniffQuery::DATABASE_SNIFFDATA."ObjectType", "Opcode", SniffQuery::CONDITION_EQUAL);
+            if ($_GET['likeBehavior'][$i] == 1)
+                $sqlQuery->AddCondition(SniffQuery::DATABASE_SNIFFDATA."Data", $value, SniffQuery::CONDITION_LIKE);
+            else
+                $sqlQuery->AddCondition(SniffQuery::DATABASE_SNIFFDATA."Data", $value, SniffQuery::CONDITION_EQUAL);
+        } else {
             $sqlQuery->AddCondition(SniffQuery::DATABASE_SNIFFDATA."ObjectType", $type, SniffQuery::CONDITION_EQUAL);
             if (!empty($value))
                 $sqlQuery->AddCondition(ctype_digit($value) ? SniffQuery::DATABASE_SNIFFDATA."Id" : SniffQuery::DATABASE_OBJECTNAMES."name", $value);
         }
 
         /// NOT a typo: just me not thinking straight when coding.
-        $sqlQuery->SetAndGroup(isset($_POST['isAndGroup'][$i]) ? !$_POST['isAndGroup'][$i] : true);
+        $sqlQuery->SetAndGroup(isset($_GET['isAndGroup'][$i]) ? !$_GET['isAndGroup'][$i] : true);
 
         $sqlQuery->CreateNewConditionGroup();
     }

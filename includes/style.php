@@ -21,7 +21,8 @@ p { text-align: left; }
 
 #page
 {
-    width: 1024px;
+    width: 95%;
+    margin:auto;
     margin-top: 20px;
     padding: 20px;
     border: 1px solid rgb(34, 173, 218);
@@ -52,7 +53,7 @@ p { text-align: left; }
 
 #topbar {
     float: left;
-    width:1024px;
+    width: 100%;
     margin: -20px;
     padding: 20px;
     padding-bottom: 10px;
@@ -66,7 +67,13 @@ p { text-align: left; }
     padding-left: 15px;
 }
 
-#topbar #topContent { float: right !important; width: 900px; }
+#topbar #topContent {
+    float: right !important;
+    width: -moz-calc(100% - 124px);
+    width: -webkit-calc(100% - 124px);
+    width: calc(100% - 124px);
+}
+
 .topLinks ul { display: block; float: left; list-style-type: none;    padding: 0px; height:21px; text-align:center; overflow:hidden; }
 .topLinks ul li a:hover { color:#65A9ED; }
 
