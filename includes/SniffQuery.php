@@ -107,7 +107,7 @@ class SniffQuery {
         $paramsArray[0] .= "i";
         $paramsArray[]  = &$this->offset;
 
-        $retString = $this->DebugQuery($query, $paramsArray);
+        $retString = $this->DebugQuery($query, $paramsArray);//var_dump($retString);
 
         $stmt = $mysqlCon->prepare($query);
         if (!$stmt)

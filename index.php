@@ -102,7 +102,7 @@ if (isset($_GET['exec'])) {
             $sqlQuery->AddCondition(SniffQuery::DATABASE_SNIFFDATA."Id", $value, SniffQuery::CONDITION_EQUAL);
         } else if ($type == "Opcode Name") {
             $sqlQuery->AddCondition(SniffQuery::DATABASE_SNIFFDATA."ObjectType", "Opcode", SniffQuery::CONDITION_EQUAL);
-            if ($_GET['likeBehavior'][$i] == 1)
+            if (@isset($_GET['likeBehavior'][$i]) && $_GET['likeBehavior'][$i] == 1)
                 $sqlQuery->AddCondition(SniffQuery::DATABASE_SNIFFDATA."Data", $value, SniffQuery::CONDITION_LIKE);
             else
                 $sqlQuery->AddCondition(SniffQuery::DATABASE_SNIFFDATA."Data", $value, SniffQuery::CONDITION_EQUAL);
@@ -123,13 +123,13 @@ if (isset($_GET['exec'])) {
     if ($resultSet === false)
         echo "Nothing to look for, sorreh.";
     else {
+        echo "<p>Query executed: {$resultSet[1]}</p>";
         $resultSet = $resultSet[0];
         if (count($resultSet) == 0) {
             echo "No result.";
             return;
         }
 
-        echo "<p>Query executed: {$response[1]}</p>";
         echo '<table id="resultSet"><tr><th style="width:90px">Build</th><th style="width:183px">Sniff Name</th><th>Data Name</th><th style="width:70px">Value</th><th>Name</th></tr>';
         foreach ($resultSet as $i => &$row) {
             echo '<tr' . ($i % 2 == 0 ? " class='odd'" : '') . '><td>' . $row[0] . '</td>';
@@ -139,10 +139,11 @@ if (isset($_GET['exec'])) {
             echo '<td>' . $row[4] . '</td></tr>';
         }
         echo "</table>";
+        $pageArgs = http_build_query($_GET, "&amp;");
         if ($startOffset != 0)
-            echo '<a class="paging" href="?startOffset='.($startOffset - 50).'">Previous Page</a>';
+            echo '<a class="paging" href="?'.$pageArgs.'&amp;startOffset='.($startOffset - 50).'">Previous Page</a>';
         if (count($resultSet) == 50)
-            echo '<a class="paging" href="?startOffset='.($startOffset + 50).'">Next Page</a>';
+            echo '<a class="paging" href="?'.$pageArgs.'&amp;startOffset='.($startOffset + 50).'">Next Page</a>';
     }
 }
 ?>
