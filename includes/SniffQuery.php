@@ -88,7 +88,7 @@ class SniffQuery {
         }
 
         // Add $this->buildList if any - Kinda hacky, but does the job
-        if (!empty($this->buildList)) {
+        if (!empty($this->buildList) && !in_array(0, $this->buildList)) {
             $query .= ") AND `" . self::DATABASE_SNIFFDATA . "Build` IN (";
             $l = count($this->buildList);
             $paramsArray[0] .= str_repeat("i", $l);
@@ -107,7 +107,7 @@ class SniffQuery {
         $paramsArray[0] .= "i";
         $paramsArray[]  = &$this->offset;
 
-        $this->DebugQuery($query, $paramsArray);
+        $retString = $this->DebugQuery($query, $paramsArray);
 
         $stmt = $mysqlCon->prepare($query);
         if (!$stmt)
@@ -121,7 +121,7 @@ class SniffQuery {
             while ($stmt->fetch())
                 $resultSet[] = array($buildVersions[$buildId], $sniffName, $data, $id, $name);
             $stmt->close();
-            return $resultSet;
+            return array($resultSet, $retString);
         }
     }
 
@@ -135,13 +135,12 @@ class SniffQuery {
     public function GetLastError() { return end($this->errorsLog); }
 
     public function DebugQuery($stmt, $paramsArray) {
-        var_dump("<p>Prepared Statement: $stmt</p>");
         for ($i = 1, $l = count($paramsArray); $i < $l; ++$i)
         {
             $position = strpos($stmt, "?");
             if ($position!== false)
-                $stmt = substr_replace($stmt, $paramsArray[$i], $position, strlen("?"));
+                $stmt = substr_replace($stmt, '"'.$paramsArray[$i].'"', $position, strlen("?"));
         }
-        var_dump("<p>Executed statement: $stmt</p>");
+        return $stmt;
     }
 }

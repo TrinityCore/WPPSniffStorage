@@ -19,7 +19,7 @@ require_once('./includes/header.php');
 require_once('./includes/SniffQuery.php');
 
 $builds = '<li><input type="checkbox" name="builds[]" value="0"> &nbsp; All Builds</li>';
-if ($result = $mysqlCon->query("SELECT DISTINCT(Build) AS b FROM SniffData WHERE b != 0 ORDER BY b DESC")) {
+if ($result = $mysqlCon->query("SELECT DISTINCT(Build) AS b FROM SniffData WHERE Build <> 0 ORDER BY Build DESC")) {
     while ($row = $result->fetch_object()) {
         $builds .= '<li><input type="checkbox" name="builds[]" value="' . $row->b . '"';
         if (isset($_POST['builds']) && in_array($row->b, $_POST["builds"]))
@@ -37,7 +37,7 @@ $startOffset    = isset($_GET['startOffset']) ? intval($_GET['startOffset']) : 0
         <legend>Sniff Search</legend>
         <div id="entryContainer">
             <p style="float:right; margin-top: -10px;">
-                <a id="addSearch">Add New Search</a> | <a id="removeSearch">Remove Last Search</a>
+                <a href="#" id="addSearch">Add New Search</a> | <a id="removeSearch">Remove Last Search</a>
             </p>
             <?php
             for ($i = 0; $i < $searchQuantity; ++$i) {
@@ -119,9 +119,17 @@ if (isset($_GET['exec'])) {
     }
 
     $resultSet = $sqlQuery->Generate();
+
     if ($resultSet === false)
         echo "Nothing to look for, sorreh.";
-    else if (count($resultSet) > 0) {
+    else {
+        $resultSet = $resultSet[0];
+        if (count($resultSet) == 0) {
+            echo "No result.";
+            return;
+        }
+
+        echo "<p>Query executed: {$response[1]}</p>";
         echo '<table id="resultSet"><tr><th style="width:90px">Build</th><th style="width:183px">Sniff Name</th><th>Data Name</th><th style="width:70px">Value</th><th>Name</th></tr>';
         foreach ($resultSet as $i => &$row) {
             echo '<tr' . ($i % 2 == 0 ? " class='odd'" : '') . '><td>' . $row[0] . '</td>';
@@ -131,7 +139,11 @@ if (isset($_GET['exec'])) {
             echo '<td>' . $row[4] . '</td></tr>';
         }
         echo "</table>";
-    } else echo "No result found matching your query.";
+        if ($startOffset != 0)
+            echo '<a class="paging" href="?startOffset='.($startOffset - 50).'">Previous Page</a>';
+        if (count($resultSet) == 50)
+            echo '<a class="paging" href="?startOffset='.($startOffset + 50).'">Next Page</a>';
+    }
 }
 ?>
 <script src="./includes/jquery.js"></script>
