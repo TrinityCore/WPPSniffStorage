@@ -1,4 +1,35 @@
 <?php
+
+function getExpansion($build)
+{
+	if ($build <= 5875)
+		return Expansions::Classic;
+	else if ($build > 5875 && $build <= 8606)
+		return Expansions::Tbc;
+	else if ($build > 8606 && $build <= 12340)
+		return Expansions::Wotlk;
+	else if ($build > 12340 && $build <= 15595)
+		return Expansions::Cataclysm;
+	else if ($build > 15595 && $build <= 18414)
+		return Expansions::Mop;
+	else if ($build > 18414 && $build <= 21742)
+		return Expansions::Wod;
+	
+	return Expansions::Unknown;
+}
+
+abstract class Expansions
+{
+	const Unknown     = -1;
+	const Classic     = 0;
+	const Tbc         = 1;
+	const Wotlk       = 2;
+	const Cataclysm   = 3;
+	const Mop         = 4;
+	const Wod         = 5;
+	const Legion      = 6;
+};
+
 $buildVersions = array(0 => "All Builds",
                        5875 => "1.12.1 5875",
                        6180 => "2.0.1 6180", 6299 => "2.0.3 6299", 6337 => "2.0.6 6337",
@@ -26,15 +57,35 @@ $buildVersions = array(0 => "All Builds",
 require_once('./includes/header.php');
 require_once('./includes/SniffQuery.php');
 
-$builds = '<li><input type="checkbox" name="builds[]" value="0"> &nbsp; All Builds</li>';
+$takenBuilds = array();
+$builds = '<input type="checkbox" name="builds[]" value="0"> All Builds';
 if ($result = $mysqlCon->query("SELECT DISTINCT(Build) AS b FROM SniffData WHERE Build <> 0 ORDER BY Build DESC")) {
     while ($row = $result->fetch_object()) {
-        $builds .= '<li><input type="checkbox" name="builds[]" value="' . $row->b . '"';
-        if (isset($_POST['builds']) && in_array($row->b, $_POST["builds"]))
-            $builds .= ' checked';
-        $builds .= '> &nbsp; ' . $buildVersions[$row->b] . '</li>';
+		$exp = getExpansion($row->b);
+        $takenBuilds[$exp] .= '<input type="checkbox" name="builds[]" value="' . $row->b . '"';
+        if (isset($_GET['builds']) && in_array($row->b, $_GET["builds"]))
+            $takenBuilds[$exp] .= ' checked';
+        $takenBuilds[$exp] .= '> ' . $buildVersions[$row->b] . '</br>';
     }
 }
+
+$builds .= '<table><tr>';
+if (!empty($takenBuilds[Expansions::Classic]))
+	$builds .= '<td><input type="checkbox" name="builds[]" value="classic"> Classic<br>' . $takenBuilds[Expansions::Classic] . '</td>';
+if (!empty($takenBuilds[Expansions::Tbc]))
+	$builds .= '<td><input type="checkbox" name="builds[]" value="tbc"> TBC<br>' . $takenBuilds[Expansions::Tbc] . '</td>';
+if (!empty($takenBuilds[Expansions::Wotlk]))
+	$builds .= '<td><input type="checkbox" name="builds[]" value="wotlk"> Wotlk<br>' . $takenBuilds[Expansions::Wotlk] . '</td>';
+if (!empty($takenBuilds[Expansions::Cataclysm]))
+	$builds .= '<td><input type="checkbox" name="builds[]" value="cata"> Cataclysm<br>' . $takenBuilds[Expansions::Cataclysm] . '</td>';
+if (!empty($takenBuilds[Expansions::Mop]))
+	$builds .= '<td><input type="checkbox" name="builds[]" value="mop"> Mop<br>' . $takenBuilds[Expansions::Mop] . '</td>';
+if (!empty($takenBuilds[Expansions::Wod]))
+	$builds .= '<td><input type="checkbox" name="builds[]" value="wod"> Wod<br>' . $takenBuilds[Expansions::Wod] . '</td>';
+if (!empty($takenBuilds[Expansions::Legion]))
+	$builds .= '<td><input type="checkbox" name="builds[]" value="legion"> Legion<br>' . $takenBuilds[Expansions::Legion] . '</td>';
+
+$builds .= '</tr></table>';
 
 $searchQuantity = isset($_GET['entryType']) ? count($_GET['entryType']) : 1;
 $startOffset    = isset($_GET['startOffset']) ? intval($_GET['startOffset']) : 0;
@@ -44,7 +95,7 @@ $startOffset    = isset($_GET['startOffset']) ? intval($_GET['startOffset']) : 0
     <fieldset>
         <legend>Sniff Search</legend>
         <div id="entryContainer">
-            <p style="float:right; margin-top: -10px;">
+            <p>
                 <a href="#" id="addSearch">Add New Search</a> | <a id="removeSearch">Remove Last Search</a>
             </p>
             <?php
@@ -61,11 +112,11 @@ $startOffset    = isset($_GET['startOffset']) ? intval($_GET['startOffset']) : 0
                         echo ">" . $types[$j] . "</option>";
                     }
                 ?>
-                </select>
+                </select><br>
                 <label>Entry: </label>
-                <input type="text" name="entry[]" class="searchInput" value="<?php echo isset($_POST['entry'][$i]) ? $_POST['entry'][$i] : ""; ?>" />
+                <input type="text" name="entry[]" class="searchInput" value="<?php echo isset($_GET['entry'][$i]) ? $_GET['entry'][$i] : ""; ?>" />
                 <p style="display:none;clear:both;" id="likesentries[]">
-                    <input type="checkbox" name="likeBehavior[]" value="1" <?php if (isset($_POST['likeBehavior'][$i])) echo 'checked '; ?>/>
+                    <input type="checkbox" name="likeBehavior[]" value="1" <?php if (isset($_GET['likeBehavior'][$i])) echo 'checked '; ?>/>
                     Use like instead of equals for opcode name.
                 </p>
                 <?php if ($searchQuantity != 1 && $i+1 != $searchQuantity) { ?>
@@ -74,7 +125,7 @@ $startOffset    = isset($_GET['startOffset']) ? intval($_GET['startOffset']) : 0
                     <input type="checkbox" name="isAndGroup[]" <?php
                         if (isset($_GET['isAndGroup'][$i]) && $_GET['isAndGroup'][$i] == true)
                             echo "checked ";
-                    ?>/> Previous search OR new search (Defaults to AND).
+                    ?>/> <small>Previous search OR new search (Defaults to AND).</small>
                 </p>
                 <?php } ?>
             </div>
@@ -87,7 +138,7 @@ $startOffset    = isset($_GET['startOffset']) ? intval($_GET['startOffset']) : 0
   </td><td>
     <fieldset class="clientBuildSelector">
         <legend>Client Version</legend>
-        <ul class="buildList" name="buildList"><?php echo $builds; ?></ul>
+        <div class="buildList" name="buildList"><?php echo $builds; ?></div>
     </fieldset>
   </td></tr></table>
 </form>
@@ -165,7 +216,7 @@ $(function() {
     }
 
     $("#removeSearch").click(function() {
-        if ($(".searchFilter").length > 1)
+        if ($(".searchFilter").length > 0)
             $(".searchFilter").last().remove();
     });
 
@@ -179,7 +230,7 @@ $(function() {
         $(entriesDiv).append($(document.createElement('p')).css('clear','both').append($(document.createElement('input')).attr({
             'type': 'checkbox',
             'name': 'isAndGroup[]'}
-        )).append(' Previous search OR new search (Defaults to AND).'));
+        )).append(' <small>Previous search OR new search (Defaults to AND).</small>'));
         $(entriesDiv).append($(document.createElement('label')).text('Entry Type: '));
         var entriesSel = $(document.createElement('select')).attr('name','entryType[]');
 
@@ -187,6 +238,7 @@ $(function() {
             $(entriesSel).append($(document.createElement('option')).val(types[type]).text(types[type]));
 
         $(entriesDiv).append($(entriesSel));
+        $(entriesDiv).append('<br>');
         $(entriesDiv).append($(document.createElement('label')).text('Entry: '));
         $(entriesDiv).append($(document.createElement('input')).attr({
             'type': 'text',
@@ -204,6 +256,55 @@ $(function() {
         $('#entryContainer').append(entriesDiv);
         // $('#entries[] select').change(function(i) { filterSelect(this); });
     });
+	
+	$("input[value=classic]").click(function() {
+		var checked = $(this).prop("checked");
+		$("input[value=classic] ~ input").each(function(i) {
+			$(this).prop("checked", checked ? true : false);
+		});
+	});
+	
+	$("input[value=tbc]").click(function() {
+		var checked = $(this).prop("checked");
+		$("input[value=tbc] ~ input").each(function(i) {
+			$(this).prop("checked", checked ? true : false);
+		});
+	});
+	
+	$("input[value=wotlk]").click(function() {
+		var checked = $(this).prop("checked");
+		$("input[value=wotlk] ~ input").each(function(i) {
+			$(this).prop("checked", checked ? true : false);
+		});
+	});
+	
+	$("input[value=cata]").click(function() {
+		var checked = $(this).prop("checked");
+		$("input[value=cata] ~ input").each(function(i) {
+			$(this).prop("checked", checked ? true : false);
+		});
+	});
+	
+	$("input[value=mop]").click(function() {
+		var checked = $(this).prop("checked");
+		$("input[value=mop] ~ input").each(function(i) {
+			$(this).prop("checked", checked ? true : false);
+		});
+	});
+	
+	$("input[value=wod]").click(function() {
+		var checked = $(this).prop("checked");
+		$("input[value=wod] ~ input").each(function(i) {
+			$(this).prop("checked", checked ? true : false);
+		});
+	});
+	
+	$("input[value=legion]").click(function() {
+		var checked = $(this).prop("checked");
+		$("input[value=legion] ~ input").each(function(i) {
+			$(this).prop("checked", checked ? true : false);
+		});
+	});
 });
 </script>
 <?php
