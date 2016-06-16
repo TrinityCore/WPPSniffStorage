@@ -105,7 +105,7 @@ p { text-align: left; }
 .clear { clear:both; }
 
 .searchInput {
-    width:250px;
+    width:114px;
     clear:right;
     margin-bottom: 8px;
 }
@@ -113,8 +113,8 @@ p { text-align: left; }
 table td { vertical-align: top; }
 
 form fieldset {
-    width: 400px;
-    margin: 0 30px;
+    /* width: 475px; */
+    margin: 0 10px;
     border: 1px solid green;
     border-radius: 3px;
     box-shadow: 0 0 15px rgb(34, 216, 34);
@@ -132,7 +132,7 @@ fieldset > legend {
 }
 
 .clientBuildSelector {
-    width:250px;
+    /* width:250px; */
     margin-bottom: 10px;
     clear:both;
     border: 1px solid green;
@@ -300,4 +300,12 @@ div#uploadTypeSelector a.activeSelector, div#uploadTypeSelector a:hover {
 
 #resultSet th {
     background-color: white;
+}
+
+div.buildList {
+	word-spacing: 0;
+}
+
+div.buildList > table > tbody > tr > td {
+	padding-right: 10px;
 }
