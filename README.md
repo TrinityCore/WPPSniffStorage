@@ -3,7 +3,7 @@ WPPSniffStorage
 
 WPP Sniff storage.
 
-Credentials are stored at pair.txt
+Credentials are stored at pair.txt.dist rename it to pair.txt after merge on 1st setup.
 
 Default credentials: root / toor
 
