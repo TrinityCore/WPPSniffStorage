@@ -1,7 +1,7 @@
 <?php
 require_once('includes/header.php');
 
-if ($result = $mysqlCon->query("SELECT DISTINCT(SniffName) AS f FROM SniffData")) {
+if ($result = $mysqlCon->query("SELECT DISTINCT(SniffName) AS f FROM sniff_data")) {
     $fileNames = array();
     while ($row = $result->fetch_object())
         $fileNames[] = $row->f;

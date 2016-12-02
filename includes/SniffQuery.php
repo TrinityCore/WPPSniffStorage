@@ -60,7 +60,7 @@ class SniffQuery {
         if (empty($this->conditionStore))
             return false;
 
-        $query = "SELECT sd.Build, sd.SniffName, sd.ObjectType, sd.Id, sd.Data, obn.name FROM SniffData sd LEFT JOIN ObjectNames obn ON obn.Id=sd.Id AND obn.ObjectType=sd.ObjectType WHERE (";
+        $query = "SELECT sd.Build, sd.SniffName, sd.ObjectType, sd.Id, sd.Data, obn.name FROM sniff_data sd LEFT JOIN object_names obn ON obn.Id=sd.Id AND obn.ObjectType=sd.ObjectType WHERE (";
 
         $paramsArray = array("");
 

@@ -183,7 +183,7 @@ function injectSQL($commandBlock) {
     $lineCount     = count($commandLines);
     $insertCommand = "";
     $insertSets    = array();
-    $affectedRows  = intval($mysqlCon->query("SELECT COUNT(*) AS n FROM SniffData")->fetch_object()->n);
+    $affectedRows  = intval($mysqlCon->query("SELECT COUNT(*) AS n FROM sniff_data")->fetch_object()->n);
     while ($lineIndex < $lineCount) {
         $line = &$commandLines[$lineIndex];
         ++$lineIndex;
@@ -209,12 +209,12 @@ function injectSQL($commandBlock) {
                 continue;
             $isIgnore = ($lineTokens[1] === "IGNORE");
             if ($lineTokens[0] === "INSERT" && (($isIgnore && $lineTokens[2] === "INTO") || (!$isIgnore && $lineTokens[1] === "INTO"))) {
-                if (in_array(str_replace("`", "", strtolower($lineTokens[$isIgnore ? 3 : 2])), array("sniffdata", "objectnames"))) // We're all set, assume it is a valid INSERT query
+                if (in_array(str_replace("`", "", strtolower($lineTokens[$isIgnore ? 3 : 2])), array("sniff_data", "object_names"))) // We're all set, assume it is a valid INSERT query
                     $insertCommand = $line;
             }
         }
     }
-    $affectedRows = intval($mysqlCon->query("SELECT COUNT(*) AS n FROM SniffData")->fetch_object()->n) - $affectedRows;
+    $affectedRows = intval($mysqlCon->query("SELECT COUNT(*) AS n FROM sniff_data")->fetch_object()->n) - $affectedRows;
     echo $affectedRows . " rows injected!";
     if ($affectedRows == 0)
         echo " No data was injected, because it is already present in database.";

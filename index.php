@@ -61,7 +61,7 @@ require_once('./includes/SniffQuery.php');
 
 $takenBuilds = array();
 $builds = '<input type="checkbox" name="builds[]" value="0"> All Builds';
-if ($result = $mysqlCon->query("SELECT DISTINCT(Build) AS b FROM SniffData WHERE Build <> 0 ORDER BY Build DESC")) {
+if ($result = $mysqlCon->query("SELECT DISTINCT(Build) AS b FROM sniff_data WHERE Build <> 0 ORDER BY Build DESC")) {
     while ($row = $result->fetch_object()) {
 		$exp = getExpansion($row->b);
         $takenBuilds[$exp] .= '<input type="checkbox" name="builds[]" value="' . $row->b . '"';
