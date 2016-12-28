@@ -21,25 +21,25 @@ $types         = array('None', 'Spell', 'Map', 'LFGDungeon', 'Battleground', 'Un
 
 <body>
     <div id="page">
-      <div id="pagetop">
-        <div id="topbar">
-            <img src="https://www.trinitycore.org/f/public/style_images/1_trinitycore.png" alt="TrinityCore Sniff Storage" style="float: left; width: 116px; height: 67px;" />
-            <div id="topContent">
-                <h4>TrinityCore Sniff Storage</h4>
-                <div class="topLinks">
-                    <ul>
-                        <?php if (!empty($_SESSION['uid'])) { ?>
-                        <li><a href="./logout.php">Quit</a></li>
-                        <?php } ?>
-                        <li><a href="./filenames.php">Parsed sniffs list</a></li>
-                        <li><a href="./upload.php">Upload</a></li>
-                        <li><a href="./index.php">Search</a></li>
-                    </ul>
+        <div id="pagetop">
+            <div id="topbar">
+                <img src="https://www.trinitycore.org/f/public/style_images/1_trinitycore.png" alt="TrinityCore Sniff Storage" style="float: left; width: 116px; height: 67px;" />
+                <div id="topContent">
+                    <h4>TrinityCore Sniff Storage</h4>
+                    <div class="topLinks">
+                        <ul>
+                            <?php if (!empty($_SESSION['uid'])) { ?>
+                            <li><a href="./logout.php">Quit</a></li>
+                            <?php } ?>
+                            <li><a href="./filenames.php">Parsed sniffs list</a></li>
+                            <li><a href="./upload.php">Upload</a></li>
+                            <li><a href="./index.php">Search</a></li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
-     </div>
-     <div id="main">
-        <div class="content">
-            <div class="main_body">
+        <div id="main">
+            <div class="content">
+                <div class="main_body">
 <!-- End of header file (CBA to redo everything using OOP) -->
