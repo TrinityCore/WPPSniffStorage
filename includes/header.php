@@ -8,6 +8,8 @@ if ($config['passwordProtection'] == "1" && basename($_SERVER["PHP_SELF"]) !== "
         header("Location: " . $_SERVER['REQUEST_SCHEME'] . "://" . $_SERVER['SERVER_NAME'] . substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], '/')) . "/login.php");
 
 $mysqlCon      = new mysqli($config['DBhost'], $config['DBuser'], $config['DBpass'], $config['DBname']);
+if (!$mysqlCon->set_charset("utf8"))
+    echo $mysqlCon->error;
 $types         = array('None', 'Spell', 'Map', 'LFGDungeon', 'Battleground', 'Unit', 'GameObject', 'Item', 'Quest', 'PageText', 'NpcText', 'Gossip', 'Zone', 'Area', 'Phase', 'Player', 'Opcode Name', 'Opcode Number');
 
 ?>
