@@ -26,7 +26,7 @@ if (!empty($_POST["user"]) && !empty($_POST["pass"])) {
 <form method="post">
     Username: <input type="text" name="user" /><br />
     Password: <input type="password" name="pass" /><br />
-    <input type="submit" value="Kaboom!" />
+    <input type="submit" value="Login" />
 </form>
 <?php
 }
