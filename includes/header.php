@@ -25,7 +25,7 @@ $types         = array('None', 'Spell', 'Map', 'LFGDungeon', 'Battleground', 'Un
     <div id="page">
         <div id="pagetop">
             <div id="topbar">
-                <img src="https://www.trinitycore.org/f/public/style_images/1_trinitycore.png" alt="TrinityCore Sniff Storage" style="float: left; width: 116px; height: 67px;" />
+                <img src="https://community.trinitycore.org/public/style_images/1_trinitycore.png" alt="TrinityCore Sniff Storage" style="float: left; width: 116px; height: 67px;" />
                 <div id="topContent">
                     <h4>TrinityCore Sniff Storage</h4>
                     <div class="topLinks">
