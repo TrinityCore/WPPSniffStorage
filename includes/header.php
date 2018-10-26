@@ -19,6 +19,10 @@ $types         = array('None', 'Spell', 'Map', 'LFGDungeon', 'Battleground', 'Un
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <link rel="stylesheet" type="text/css" href="./includes/style.php?a=<?php echo intval($config["allowPkt"]) + 2; ?>" />
     <title>WPP Sniff Data Storage</title>
+    <?php 
+    if (intval($config['enableTooltips']) == 1)
+        echo '<script src="' . $config['tooltipJs'] . '"></script>';
+    ?>
 </head>
 
 <body>
