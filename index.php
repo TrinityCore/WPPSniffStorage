@@ -213,11 +213,41 @@ if (isset($_GET['exec'])) {
 
         echo '<table id="resultSet"><tr><th style="width:90px">Build</th><th style="width:500px">Sniff Name</th><th>Data Name</th><th style="width:70px">Value</th><th>Name</th></tr>';
         foreach ($resultSet as $i => &$row) {
+            // $row[0] = Build | $row[1] = Sniff name | $row[2] = Data name | $row[3] = Value | $row[4] = Name | $row[5] = Object type
             echo '<tr' . ($i % 2 == 0 ? " class='odd'" : '') . '><td>' . $row[0] . '</td>';
             echo '<td><a title="' . $row[1] . '">' . substr($row[1], 0, 28) . '</a></td>';
             echo '<td>' . $row[2] . '</td>';
             echo '<td>' . $row[3] . '</td>';
-            echo '<td>' . $row[4] . '</td></tr>';
+
+            $isObjTypeValid = true; // only will be valid: Spell, Unit, GameObject, Item, Quest, Zone, Achievement
+            $objType = strtolower($row[5]);
+            switch ($objType)
+            {
+                case "spell":
+                    break;
+                case "unit":
+                    $objType = "npc";
+                    break;
+                case "gameobject":
+                    $objType = "object";
+                    break;
+                case "item":
+                    break;
+                case "quest":
+                    break;
+                case "zone":
+                    break;
+                case "achievement":
+                    break;
+                default:
+                    $isObjTypeValid = false;
+                    break;
+            }
+
+            if ($isObjTypeValid)
+                echo '<td><a href="' . $config['tooltipRedirectionUrl'] . '/?' . $objType . '=' . $row[3] . '" target="_blank" title="Id: ' . $row[3] . '">' . $row[4] . '</a></td></tr>';
+            else
+                echo '<td>' . $row[4] . '</td></tr>';
         }
         echo "</table>";
         $pageArgs = http_build_query($_GET, "&amp;");

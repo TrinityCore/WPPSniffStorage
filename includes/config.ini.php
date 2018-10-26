@@ -23,3 +23,8 @@ unused = "3899dcbab79f92af727c2190bbd8abc5"
 
 [Safety]
 passwordProtection = 1 ; Enable password protection - Enabled by default
+
+[Tooltips]
+enableTooltips = 1 ; Enable tooltips
+tooltipJs = "http://wow.zamimg.com/widgets/power.js" ; URL pointing to javascript file
+tooltipRedirectionUrl = "https://www.wowhead.com"; URL pointing to tooltip host

@@ -119,7 +119,7 @@ class SniffQuery {
 
             $resultSet = array();
             while ($stmt->fetch())
-                $resultSet[] = array($buildVersions[$buildId], $sniffName, $data, $id, $name);
+                $resultSet[] = array($buildVersions[$buildId], $sniffName, $data, $id, $name, $objectType);
             $stmt->close();
             return array($resultSet, $retString);
         }
