@@ -16,7 +16,7 @@ function getExpansion($build)
 		return Expansions::Wod;
 	else if ($build > 21742 && $build <= 26899)
 		return Expansions::Legion;
-	else if ($build > 26972 && $build <= 27404)
+	else if ($build > 26972 && $build <= 27843)
 		return Expansions::Bfa;
 	return Expansions::Unknown;
 }
