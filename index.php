@@ -360,7 +360,7 @@ $(function() {
 		});
 	});
 
-  	$$("input[value=bfa]").click(function() {
+  	$("input[value=bfa]").click(function() {
 		$var checked = $(this).prop("checked");
 		$("input[value=bfa] ~ input").each(function(i) {
 			$(this).prop("checked", checked ? true : false);
